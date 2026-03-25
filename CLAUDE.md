@@ -1,6 +1,7 @@
 # TupperAware — Claude Code Spec
 
 ## Project overview
+
 TupperAware is an iOS app (React Native + Expo) that tracks household food inventory
 and expiration dates. Users belong to a household, which contains named locations
 (fridge, pantry, freezer, etc.), each holding food items with expiry tracking and
@@ -12,16 +13,17 @@ development, compared against a 4-person 48-hour hackathon baseline.
 ---
 
 ## Tech stack
-| Layer | Choice |
-|---|---|
-| Framework | React Native + Expo (TypeScript) |
-| Backend / DB | Supabase (Postgres + Auth + Storage) |
-| Notifications | expo-notifications |
-| Camera / Scan | expo-camera + expo-barcode-scanner |
-| Navigation | expo-router (file-based) |
-| State | React Context + hooks (no Redux) |
-| Styling | StyleSheet (no Tailwind) |
-| Target platform | iOS (App Store via EAS Build) |
+
+| Layer           | Choice                               |
+| --------------- | ------------------------------------ |
+| Framework       | React Native + Expo (TypeScript)     |
+| Backend / DB    | Supabase (Postgres + Auth + Storage) |
+| Notifications   | expo-notifications                   |
+| Camera / Scan   | expo-camera + expo-barcode-scanner   |
+| Navigation      | expo-router (file-based)             |
+| State           | React Context + hooks (no Redux)     |
+| Styling         | StyleSheet (no Tailwind)             |
+| Target platform | iOS (App Store via EAS Build)        |
 
 ---
 
@@ -64,6 +66,7 @@ items
 ```
 
 ### Key rules
+
 - Items are fetched by `location_id`, sorted by `expiry_date` ASC
 - "Expiring soon" = expiry_date within 3 days of today
 - "Expired" = expiry_date < today
@@ -94,6 +97,7 @@ items
 ---
 
 ## MVP features (must ship)
+
 - [ ] Auth — Supabase email/password sign in + sign up
 - [ ] Household creation with custom name + default locations
 - [ ] Invite members by email
@@ -106,6 +110,7 @@ items
 - [ ] Stat cards on home (total items, expiring soon, fresh count)
 
 ## V2 / stretch features
+
 - [ ] Receipt scanning via camera + AI parsing
 - [ ] Recipe suggestions based on items expiring soon
 - [ ] Waste tracking analytics (used vs discarded over time)
@@ -160,41 +165,46 @@ tupperaware/
 ---
 
 ## Color palette (from mockups)
+
 ```ts
 // constants/colors.ts
 export const Colors = {
-  blue:       '#185FA5',
-  blueBg:     '#E6F1FB',
-  green:      '#3B6D11',
-  greenBg:    '#EAF3DE',
-  amber:      '#854F0B',
-  amberBg:    '#FAEEDA',
-  red:        '#A32D2D',
-  redBg:      '#FCEBEB',
-  textPrimary:   '#2C2C2A',
-  textSecondary: '#5F5E5A',
-  border:        '#D3D1C7',
-  surface:       '#F1EFE8',
-}
+  blue: "#185FA5",
+  blueBg: "#E6F1FB",
+  green: "#3B6D11",
+  greenBg: "#EAF3DE",
+  amber: "#854F0B",
+  amberBg: "#FAEEDA",
+  red: "#A32D2D",
+  redBg: "#FCEBEB",
+  textPrimary: "#2C2C2A",
+  textSecondary: "#5F5E5A",
+  border: "#D3D1C7",
+  surface: "#F1EFE8",
+};
 ```
 
 ---
 
 ## Expiry logic
+
 ```ts
 // Given an expiry_date string (YYYY-MM-DD), return status
-export function getExpiryStatus(expiryDate: string): 'expired' | 'critical' | 'warning' | 'fresh' {
-  const days = differenceInDays(parseISO(expiryDate), new Date())
-  if (days < 0)  return 'expired'
-  if (days <= 2) return 'critical'   // red pill
-  if (days <= 5) return 'warning'    // amber pill
-  return 'fresh'                     // green pill
+export function getExpiryStatus(
+  expiryDate: string,
+): "expired" | "critical" | "warning" | "fresh" {
+  const days = differenceInDays(parseISO(expiryDate), new Date());
+  if (days < 0) return "expired";
+  if (days <= 2) return "critical"; // red pill
+  if (days <= 5) return "warning"; // amber pill
+  return "fresh"; // green pill
 }
 ```
 
 ---
 
 ## Environment variables
+
 ```
 # .env.local (never commit this)
 EXPO_PUBLIC_SUPABASE_URL=
@@ -204,6 +214,7 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 ---
 
 ## Claude Code conventions
+
 - Always use TypeScript. No `any` types.
 - Prefer named exports over default exports for components.
 - Hooks live in `/hooks`, pure utility functions in `/lib`.
@@ -215,11 +226,20 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 ---
 
 ## Current task
-> **Update this section before each Claude Code session.**
 
-Example:
-```
-Task: Scaffold the project with Expo, install dependencies, create Supabase client.
-Files to create: lib/supabase.ts, types/index.ts, constants/colors.ts
-Do NOT build any screens yet — just the foundation.
-```
+Task: Build the foundation layer — no screens yet.
+
+1. `types/index.ts` — TypeScript types for Household, Location, Item,
+   HouseholdMember, and ExpiryStatus based on the data model in this file.
+
+2. `constants/colors.ts` — export the Colors object defined in this file.
+
+3. `lib/supabase.ts` — initialize and export the Supabase client using
+   EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY from env.
+
+4. `lib/openFoodFacts.ts` — export a single async function `lookupBarcode(barcode: string)`
+   that fetches from https://world.openfoodfacts.org/api/v0/product/{barcode}.json
+   and returns { name, category } or null if not found.
+
+Do not build any screens or hooks yet. Types and utilities only.
+Suggest a git commit message when done.
