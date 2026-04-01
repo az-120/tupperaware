@@ -227,19 +227,55 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 
 ## Current task
 
-Task: Build the foundation layer — no screens yet.
+Task: Build the authentication screens and navigation shell.
 
-1. `types/index.ts` — TypeScript types for Household, Location, Item,
-   HouseholdMember, and ExpiryStatus based on the data model in this file.
+### 1. Auth screens
 
-2. `constants/colors.ts` — export the Colors object defined in this file.
+Update in `app/auth/sign-in.tsx` and `app/auth/create-account.tsx`.
 
-3. `lib/supabase.ts` — initialize and export the Supabase client using
-   EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY from env.
+Sign-in screen:
 
-4. `lib/openFoodFacts.ts` — export a single async function `lookupBarcode(barcode: string)`
-   that fetches from https://world.openfoodfacts.org/api/v0/product/{barcode}.json
-   and returns { name, category } or null if not found.
+- Email and password text inputs
+- "Sign in" button that calls supabase.auth.signInWithPassword()
+- Link to navigate to create-account screen
+- Show inline error message if login fails
 
-Do not build any screens or hooks yet. Types and utilities only.
-Suggest a git commit message when done.
+Create account screen:
+
+- Email and password text inputs
+- "Create account" button that calls supabase.auth.signUp()
+- Link to navigate back to sign-in
+- Show inline error message if signup fails
+
+### 2. Auth context
+
+Create `hooks/useAuth.ts` — a React context + hook that:
+
+- Exposes: session, user, signOut, loading
+- Listens to supabase.auth.onAuthStateChange() to keep session in sync
+- Persists session automatically (Supabase JS client handles this)
+
+### 3. Root layout with auth gate
+
+Update `app/_layout.tsx` to:
+
+- Wrap the app in the AuthProvider from useAuth
+- If loading, show a centered ActivityIndicator
+- If no session, redirect to /auth/sign-in
+- If session exists, redirect to /(tabs)/
+
+### 4. Tab layout shell
+
+Create `app/(tabs)/_layout.tsx` with a basic bottom tab navigator
+containing four tabs: Home, Expiring, Search, Profile. Placeholder
+screens for each are fine — just render a View with a centered Text
+label for now.
+
+### Notes
+
+- Use Colors from constants/colors.ts for all styling
+- Use StyleSheet.create — no inline styles longer than 2 properties
+- No third-party auth libraries — Supabase client only
+- After all files are written, run `npx tsc --noEmit` to check for
+  type errors and fix any that come up
+- Suggest a git commit message when done
