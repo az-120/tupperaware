@@ -6,9 +6,10 @@ import { Colors } from "../constants/colors";
 
 interface ItemRowProps {
   item: Item;
+  locationName?: string;
 }
 
-export function ItemRow({ item }: ItemRowProps) {
+export function ItemRow({ item, locationName }: ItemRowProps) {
   const router = useRouter();
 
   return (
@@ -22,6 +23,7 @@ export function ItemRow({ item }: ItemRowProps) {
         <Text style={styles.meta}>
           {item.category}
           {item.quantity ? `  ·  ${item.quantity}` : ""}
+          {locationName ? `  ·  ${locationName}` : ""}
         </Text>
       </View>
       <ExpiryPill expiryDate={item.expiry_date} />

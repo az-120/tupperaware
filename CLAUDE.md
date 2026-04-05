@@ -227,68 +227,50 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 
 ## Current task
 
-Task: Implement push notifications for expiring items.
+Task: Build the search screen.
 
-### 1. Utility: `lib/notifications.ts` (update existing)
+### 1. Screen: `app/(tabs)/search.tsx`
 
-Implement the following functions:
+A screen for searching all active items across the household:
 
-`requestPermissions()`:
+Data:
 
-- Requests push notification permissions using expo-notifications
-- Returns true if granted, false if denied
-- On iOS, must call Notifications.requestPermissionsAsync()
+- Uses useAuth and useHousehold to get current user and household
+- On mount, fetches ALL active items across all household locations
+  using raw fetch + session token
+- Same query pattern as expiring screen:
+  GET /rest/v1/items?select=\*,locations(name,household_id)
+  &status=eq.active
+  &locations.household_id=eq.{household_id}
+  &order=name.asc
+- Each item result should include locations(name) for display
 
-`scheduleExpiryNotification(item: Item)`:
+Search logic (client-side, no additional Supabase calls):
 
-- Schedules a local notification for 1 day before item expiry_date
-- Notification title: "TupperAware — expiring tomorrow"
-- Notification body: "{item.name} in {location} expires tomorrow"
-- Uses Notifications.scheduleNotificationAsync with a date trigger
-- If the notification date is in the past, does not schedule
-- Returns the notification identifier string or null
+- Filters the fetched items array in real time as the user types
+- Matches against item name (case insensitive) and category
+- Minimum 1 character to start filtering
 
-`cancelNotification(identifier: string)`:
+Layout:
 
-- Cancels a scheduled notification by identifier
-- Uses Notifications.cancelScheduledNotificationAsync
-
-`scheduleAllExpiryNotifications(items: Item[])`:
-
-- Cancels all existing scheduled notifications first
-- Schedules notifications for all active items
-- Returns array of scheduled identifiers
-
-### 2. Update `app/_layout.tsx`
-
-On app startup after session is confirmed:
-
-- Call requestPermissions()
-- If granted, fetch all active items for the household and call
-  scheduleAllExpiryNotifications()
-- Set up a Notifications.addNotificationReceivedListener that logs
-  received notifications in development
-- Set up a Notifications.addNotificationResponseReceivedListener
-  that navigates to the expiring screen when user taps a notification
-
-### 3. Update `app/item/add.tsx`
-
-After successfully inserting a new item:
-
-- Call scheduleExpiryNotification() for the new item
-
-### 4. Update `app/item/[id].tsx`
-
-After marking an item as used or discarded:
-
-- The notification for that item should be cancelled
-- Store the notification identifier on the item if possible, or
-  cancel all and reschedule remaining active items
+- Search input at the top with a search icon, placeholder "Search
+  your inventory..."
+- Below the input, show result count as muted text e.g. "12 items"
+  or "3 of 12 items" when filtering
+- Results list using ItemRow component
+- Each ItemRow subtitle shows category · quantity · location name
+- Empty state when no query entered: centered text "Search your
+  inventory" with a 🔍 emoji
+- Empty state when query returns no results: "No items found for
+  "{query}""
+- Pull to refresh that re-fetches all items and clears the search
+- Uses Colors from constants/colors.ts
 
 ### Notes
 
-- expo-notifications is already installed
-- Local notifications only — no push notification server needed
-- Notifications only work on real device, not simulator
-- After all files are written run `npx tsc --noEmit` and fix any errors
+- Use raw fetch with session token for the Supabase fetch
+- All filtering is client-side — no additional network calls on
+  each keystroke
+- Use StyleSheet.create for all styles
+- After file is written run `npx tsc --noEmit` and fix any errors
 - Suggest a git commit message when done
