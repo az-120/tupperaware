@@ -11,6 +11,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { ExpiryPill } from "../../components/ExpiryPill";
 import { daysUntilExpiry, getExpiryStatus } from "../../lib/expiry";
 import { supabase } from "../../lib/supabase";
+import { scheduleAllExpiryNotifications } from "../../lib/notifications";
 import { Colors } from "../../constants/colors";
 import { Item, ItemCategory, Location } from "../../types";
 
@@ -130,6 +131,18 @@ export default function ItemDetailScreen() {
       const body = await res.text();
       setError(`Update failed: ${body}`);
       return;
+    }
+
+    // Reschedule notifications excluding the now-inactive item
+    if (item) {
+      const activeRes = await fetch(
+        `${base}/rest/v1/items?location_id=eq.${item.location_id}&status=eq.active&id=neq.${id}`,
+        { headers },
+      );
+      if (activeRes.ok) {
+        const remaining = (await activeRes.json()) as Item[];
+        await scheduleAllExpiryNotifications(remaining);
+      }
     }
 
     router.back();

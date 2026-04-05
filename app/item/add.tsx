@@ -16,8 +16,9 @@ import { useHousehold } from "../../hooks/useHousehold";
 import { BarcodeScanner } from "../../components/BarcodeScanner";
 import { lookupBarcode } from "../../lib/openFoodFacts";
 import { supabase } from "../../lib/supabase";
+import { scheduleExpiryNotification } from "../../lib/notifications";
 import { Colors } from "../../constants/colors";
-import { ItemCategory } from "../../types";
+import { Item, ItemCategory } from "../../types";
 
 type Mode = "scan" | "manual";
 
@@ -85,7 +86,7 @@ export default function AddItemScreen() {
           apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
           Authorization: `Bearer ${session?.access_token ?? ""}`,
           "Content-Type": "application/json",
-          Prefer: "return=minimal",
+          Prefer: "return=representation",
         },
         body: JSON.stringify({
           location_id: selectedLocationId,
@@ -105,6 +106,12 @@ export default function AddItemScreen() {
       const body = await res.text();
       setError(`Failed to add item: ${body}`);
       return;
+    }
+
+    const inserted = (await res.json()) as Item[];
+    if (inserted[0]) {
+      const selectedLocation = locations.find((l) => l.id === selectedLocationId);
+      await scheduleExpiryNotification(inserted[0], selectedLocation?.name);
     }
 
     router.back();

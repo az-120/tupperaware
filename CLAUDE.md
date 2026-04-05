@@ -227,54 +227,68 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 
 ## Current task
 
-Task: Build the profile screen.
+Task: Implement push notifications for expiring items.
 
-### 1. Screen: `app/(tabs)/profile.tsx`
+### 1. Utility: `lib/notifications.ts` (update existing)
 
-The profile and settings screen:
+Implement the following functions:
 
-- Uses useAuth to get current user
-- Uses useHousehold to get household data
+`requestPermissions()`:
 
-Sections:
+- Requests push notification permissions using expo-notifications
+- Returns true if granted, false if denied
+- On iOS, must call Notifications.requestPermissionsAsync()
 
-Account section:
+`scheduleExpiryNotification(item: Item)`:
 
-- User avatar circle with initials derived from email
-  (e.g. "ab" from "ab@gmail.com")
-- User email displayed below avatar
-- Member since date (formatted as MMM yyyy using date-fns)
+- Schedules a local notification for 1 day before item expiry_date
+- Notification title: "TupperAware — expiring tomorrow"
+- Notification body: "{item.name} in {location} expires tomorrow"
+- Uses Notifications.scheduleNotificationAsync with a date trigger
+- If the notification date is in the past, does not schedule
+- Returns the notification identifier string or null
 
-Household section:
+`cancelNotification(identifier: string)`:
 
-- Household name
-- List of locations with their icons and names
-- "Invite member" row with a + icon (no-op for now, just shows
-  a coming soon alert)
+- Cancels a scheduled notification by identifier
+- Uses Notifications.cancelScheduledNotificationAsync
 
-App section:
+`scheduleAllExpiryNotifications(items: Item[])`:
 
-- "Notification settings" row (no-op for now, shows coming soon alert)
-- "Rate TupperAware" row (no-op for now)
+- Cancels all existing scheduled notifications first
+- Schedules notifications for all active items
+- Returns array of scheduled identifiers
 
-Danger zone section:
+### 2. Update `app/_layout.tsx`
 
-- "Sign out" button in red that calls supabase.auth.signOut()
-  then redirects to /auth/sign-in
-- Section header labeled "Danger zone" in red
+On app startup after session is confirmed:
 
-General layout:
+- Call requestPermissions()
+- If granted, fetch all active items for the household and call
+  scheduleAllExpiryNotifications()
+- Set up a Notifications.addNotificationReceivedListener that logs
+  received notifications in development
+- Set up a Notifications.addNotificationResponseReceivedListener
+  that navigates to the expiring screen when user taps a notification
 
-- ScrollView with section headers as muted uppercase labels
-- Each section in a card with rounded corners and border
-- Rows have a right chevron "›" except the sign out button
-- Uses Colors from constants/colors.ts
+### 3. Update `app/item/add.tsx`
+
+After successfully inserting a new item:
+
+- Call scheduleExpiryNotification() for the new item
+
+### 4. Update `app/item/[id].tsx`
+
+After marking an item as used or discarded:
+
+- The notification for that item should be cancelled
+- Store the notification identifier on the item if possible, or
+  cancel all and reschedule remaining active items
 
 ### Notes
 
-- Use StyleSheet.create for all styles
-- No Supabase fetch needed beyond what useAuth and useHousehold
-  already provide
-- Sign out is the one action that must fully work
-- After file is written run `npx tsc --noEmit` and fix any errors
+- expo-notifications is already installed
+- Local notifications only — no push notification server needed
+- Notifications only work on real device, not simulator
+- After all files are written run `npx tsc --noEmit` and fix any errors
 - Suggest a git commit message when done
