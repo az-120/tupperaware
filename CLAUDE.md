@@ -227,55 +227,45 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 
 ## Current task
 
-Task: Build the item detail screen.
+Task: Build the expiring screen.
 
-### 1. Screen: `app/item/[id].tsx`
+### 1. Screen: `app/(tabs)/expiring.tsx`
 
-The item detail screen:
+A screen showing all items expiring within 5 days across all household
+locations:
 
-- Uses useLocalSearchParams to get item id from route
-- Fetches the item from Supabase using raw fetch + session token
-- Fetches the location name for display
-- Navigation bar shows item name, back button, and Edit button
-  (Edit can be a no-op for now)
+- Uses useAuth to get current user
+- Uses useHousehold to get household
+- Fetches all active items across all locations in the household
+  sorted by expiry_date ASC using raw fetch + session token
+  - Join: items → locations → households via household_id
+  - Filter: status = 'active' AND expiry_date <= today + 5 days
+  - Include location name in each item result for display
+- Groups items into two sections:
+  - "Expired" — items where expiry_date < today
+  - "Expiring soon" — items where expiry_date is within 5 days
+  - Each section only renders if it has items
+- Uses ItemRow component for each item
+- Empty state: a centered message "Nothing expiring soon — you're
+  all good!" with a green checkmark emoji
+- Pull to refresh support
+- Shows total count in the navigation title e.g. "Expiring (3)"
+  or just "Expiring" if count is 0
+- Uses Colors from constants/colors.ts
 
-Layout:
+### Supabase query
 
-- Header section with a large category emoji icon, item name, and
-  location name as subtitle
-- Freshness bar: a horizontal progress bar showing percentage of
-  shelf life remaining between date added (created_at) and expiry_date
-  - Bar fill color matches expiry status (red/amber/green)
-  - ExpiryPill shown next to the bar
-- Metadata rows (key/value pairs with bottom borders):
-  - Quantity
-  - Category
-  - Location
-  - Date added (formatted as MMM dd, yyyy using date-fns)
-  - Expiry date (formatted as MMM dd, yyyy)
-  - Barcode (show "Not scanned" if null)
-- Two action buttons at the bottom:
-  - "Mark as used" (green background) — updates item status to
-    'used' via raw fetch PATCH, then navigates back
-  - "Discard item" (red background) — updates item status to
-    'discarded' via raw fetch PATCH, then navigates back
-- Show a loading spinner while fetching
-- Show inline error if fetch or update fails
-
-### Category emoji map
-
-Use this mapping for the header icon:
-
-- Dairy → 🥛
-- Produce → 🥦
-- Meat → 🥩
-- Frozen → ❄️
-- Pantry → 🥫
-- Other → 📦
+Fetch items with location name included using this endpoint:
+GET /rest/v1/items?select=\*,locations(name,household_id)
+&status=eq.active
+&expiry_date=lte.{date_5_days_from_now}
+&locations.household_id=eq.{household_id}
+&order=expiry_date.asc
 
 ### Notes
 
 - Use raw fetch with session token for all Supabase calls
-- PATCH request to /rest/v1/items?id=eq.{id} to update status
+- Format the 5-days-from-now date as YYYY-MM-DD using date-fns format()
+- Use StyleSheet.create for all styles
 - After file is written run `npx tsc --noEmit` and fix any errors
 - Suggest a git commit message when done
