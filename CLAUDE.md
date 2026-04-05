@@ -98,16 +98,16 @@ items
 
 ## MVP features (must ship)
 
-- [ ] Auth — Supabase email/password sign in + sign up
-- [ ] Household creation with custom name + default locations
+- [x] Auth — Supabase email/password sign in + sign up
+- [x] Household creation with custom name + default locations
 - [ ] Invite members by email
-- [ ] Location cards on home screen with item chips
-- [ ] Expiry status pills: red (≤2 days), amber (3–5 days), green (6+ days)
-- [ ] Add item — manual form (name, qty, category, location, expiry date)
-- [ ] Add item — barcode scan → auto-fill name via Open Food Facts API
-- [ ] Item detail — mark as used / discard
+- [x] Location cards on home screen with item chips
+- [x] Expiry status pills: red (≤2 days), amber (3–5 days), green (6+ days)
+- [x] Add item — manual form (name, qty, category, location, expiry date)
+- [x] Add item — barcode scan → auto-fill name via Open Food Facts API
+- [x] Item detail — mark as used / discard
 - [ ] Expiry alerts — push notifications 1 day before expiry
-- [ ] Stat cards on home (total items, expiring soon, fresh count)
+- [x] Stat cards on home (total items, expiring soon, fresh count)
 
 ## V2 / stretch features
 
@@ -227,45 +227,54 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 
 ## Current task
 
-Task: Build the expiring screen.
+Task: Build the profile screen.
 
-### 1. Screen: `app/(tabs)/expiring.tsx`
+### 1. Screen: `app/(tabs)/profile.tsx`
 
-A screen showing all items expiring within 5 days across all household
-locations:
+The profile and settings screen:
 
 - Uses useAuth to get current user
-- Uses useHousehold to get household
-- Fetches all active items across all locations in the household
-  sorted by expiry_date ASC using raw fetch + session token
-  - Join: items → locations → households via household_id
-  - Filter: status = 'active' AND expiry_date <= today + 5 days
-  - Include location name in each item result for display
-- Groups items into two sections:
-  - "Expired" — items where expiry_date < today
-  - "Expiring soon" — items where expiry_date is within 5 days
-  - Each section only renders if it has items
-- Uses ItemRow component for each item
-- Empty state: a centered message "Nothing expiring soon — you're
-  all good!" with a green checkmark emoji
-- Pull to refresh support
-- Shows total count in the navigation title e.g. "Expiring (3)"
-  or just "Expiring" if count is 0
+- Uses useHousehold to get household data
+
+Sections:
+
+Account section:
+
+- User avatar circle with initials derived from email
+  (e.g. "ab" from "ab@gmail.com")
+- User email displayed below avatar
+- Member since date (formatted as MMM yyyy using date-fns)
+
+Household section:
+
+- Household name
+- List of locations with their icons and names
+- "Invite member" row with a + icon (no-op for now, just shows
+  a coming soon alert)
+
+App section:
+
+- "Notification settings" row (no-op for now, shows coming soon alert)
+- "Rate TupperAware" row (no-op for now)
+
+Danger zone section:
+
+- "Sign out" button in red that calls supabase.auth.signOut()
+  then redirects to /auth/sign-in
+- Section header labeled "Danger zone" in red
+
+General layout:
+
+- ScrollView with section headers as muted uppercase labels
+- Each section in a card with rounded corners and border
+- Rows have a right chevron "›" except the sign out button
 - Uses Colors from constants/colors.ts
-
-### Supabase query
-
-Fetch items with location name included using this endpoint:
-GET /rest/v1/items?select=\*,locations(name,household_id)
-&status=eq.active
-&expiry_date=lte.{date_5_days_from_now}
-&locations.household_id=eq.{household_id}
-&order=expiry_date.asc
 
 ### Notes
 
-- Use raw fetch with session token for all Supabase calls
-- Format the 5-days-from-now date as YYYY-MM-DD using date-fns format()
 - Use StyleSheet.create for all styles
+- No Supabase fetch needed beyond what useAuth and useHousehold
+  already provide
+- Sign out is the one action that must fully work
 - After file is written run `npx tsc --noEmit` and fix any errors
 - Suggest a git commit message when done
