@@ -227,76 +227,68 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 
 ## Current task
 
-Task: Build the household home screen.
+Task: Build the add item screen.
 
-### 1. Hook: `hooks/useLocations.ts`
+### 1. Utility: `lib/openFoodFacts.ts` (update existing)
 
-Create a hook that:
+Ensure the lookupBarcode function:
 
-- Accepts a household_id parameter
-- Fetches all locations for that household from Supabase
-- For each location, also fetches its active items (status = 'active')
-- Returns: { locations, loading, error, refresh }
-- Each location object should include an `items` array of its active items
+- Fetches from https://world.openfoodfacts.org/api/v0/product/{barcode}.json
+- Returns { name: string, category: string } or null if not found
+- Maps Open Food Facts categories to our app categories:
+  ('Dairy' | 'Produce' | 'Meat' | 'Frozen' | 'Pantry' | 'Other')
+- Handles network errors gracefully by returning null
 
-### 2. Hook: `hooks/useItems.ts`
+### 2. Component: `components/BarcodeScanner.tsx`
 
-Create a hook that:
+A camera component that:
 
-- Accepts a location_id parameter
-- Fetches all active items for that location sorted by expiry_date ASC
-- Returns: { items, loading, error, refresh }
-
-### 3. Component: `components/ExpiryPill.tsx`
-
-A small pill badge component that:
-
-- Accepts an expiry_date string (YYYY-MM-DD)
-- Calculates days until expiry using date-fns differenceInDays
-- Returns red pill (≤2 days), amber pill (3–5 days), green pill (6+ days)
-- Text shows "X days" or "Expired" if days < 0
+- Uses expo-camera and expo-barcode-scanner
+- Requests camera permissions on mount, shows a message if denied
+- Shows a camera viewfinder with a centered scan target box overlay
+- Calls an onScanned(barcode: string) callback when a barcode is detected
+- Shows a "Tap to scan again" button after a successful scan
 - Uses Colors from constants/colors.ts
 
-### 4. Component: `components/StatCard.tsx`
+### 3. Screen: `app/item/add.tsx`
 
-A small stat display card that:
+The add item screen with two modes:
 
-- Accepts a label (string) and value (string | number)
-- Accepts an optional color prop for the value text
-- Renders a muted label above a larger value number
-- Uses Colors from constants/colors.ts
+- Uses useLocalSearchParams to get location_id from route params
+- Uses useHousehold to get available locations for the selector
 
-### 5. Component: `components/LocationCard.tsx`
+Segmented control at top toggling between Scan and Manual modes.
 
-A card component that:
+Scan mode:
 
-- Accepts a location object (with name, icon, items array)
-- Shows location name and icon
-- Shows item count on the right
-- Shows up to 4 item chips below, each showing item name and expiry
-- Chips are color coded using ExpiryPill logic (red/amber/green background)
-- Tapping the card navigates to /location/[id]
-- Uses Colors from constants/colors.ts
+- Shows BarcodeScanner component
+- On successful scan, calls lookupBarcode from lib/openFoodFacts.ts
+- If product found, auto-populates name and category and switches
+  to Manual mode so user can review and confirm
+- If product not found, switches to Manual mode with empty fields
+  and shows a "Product not found — enter manually" message
 
-### 6. Screen: `app/(tabs)/index.tsx`
+Manual mode form fields:
 
-The main household home screen:
-
-- Uses useAuth to get current user
-- Uses useHousehold to get household and check loading state
-- Uses useLocations to get locations with items
-- Shows household name and member count in header
-- Stat row with 3 StatCards: total active items, expiring soon (≤5 days), fresh (6+ days)
-- Red alert banner if any items expire within 2 days — shows count and "View" link to /expiring
-- Scrollable list of LocationCards
-- "No locations yet" empty state if none exist
-- Pull to refresh support
-- Uses Colors from constants/colors.ts
+- Item name (text input, required)
+- Quantity (text input, optional, e.g. "1 gal", "12 ct")
+- Category (segmented or picker: Dairy, Produce, Meat, Frozen, Pantry, Other)
+- Location selector (pills showing all household locations,
+  pre-selected to the location_id passed in from route params)
+- Expiration date (date picker using @react-native-community/datetimepicker)
+- "Add item" button that:
+  1. Validates name and expiry_date are present
+  2. Inserts item into Supabase using raw fetch with session token
+  3. On success navigates back to the location view
+  4. Shows inline error if insert fails
 
 ### Notes
 
-- All Supabase fetches should use raw fetch with session token (same pattern
-  as create-household.tsx) since the Supabase JS client has auth issues
+- Install @react-native-community/datetimepicker:
+  npx expo install @react-native-community/datetimepicker
+- Use raw fetch with session token for the items insert
+- added_by field should be set to the current user's id
+- status should default to 'active' on insert
 - Use StyleSheet.create for all styles
 - After all files are written run `npx tsc --noEmit` and fix any errors
 - Suggest a git commit message when done
