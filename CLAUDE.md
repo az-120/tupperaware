@@ -227,50 +227,55 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 
 ## Current task
 
-Task: Build the search screen.
+Task: Build the edit item screen.
 
-### 1. Screen: `app/(tabs)/search.tsx`
+### 1. Screen: `app/item/edit.tsx`
 
-A screen for searching all active items across the household:
+A screen for editing an existing item, pre-populated with current values:
 
 Data:
 
-- Uses useAuth and useHousehold to get current user and household
-- On mount, fetches ALL active items across all household locations
-  using raw fetch + session token
-- Same query pattern as expiring screen:
-  GET /rest/v1/items?select=\*,locations(name,household_id)
-  &status=eq.active
-  &locations.household_id=eq.{household_id}
-  &order=name.asc
-- Each item result should include locations(name) for display
+- Uses useLocalSearchParams to get item id from route
+- On mount, fetches the item from Supabase using raw fetch + session token
+- Uses useHousehold to get available locations for the location selector
 
-Search logic (client-side, no additional Supabase calls):
+Form fields (identical to add item manual form, pre-populated):
 
-- Filters the fetched items array in real time as the user types
-- Matches against item name (case insensitive) and category
-- Minimum 1 character to start filtering
+- Item name (text input, required)
+- Quantity (text input, optional)
+- Category selector (Dairy, Produce, Meat, Frozen, Pantry, Other)
+  pre-selected to current category
+- Location selector (pills showing all household locations)
+  pre-selected to current location_id
+- Expiration date (date picker) pre-set to current expiry_date
 
-Layout:
+Save button:
 
-- Search input at the top with a search icon, placeholder "Search
-  your inventory..."
-- Below the input, show result count as muted text e.g. "12 items"
-  or "3 of 12 items" when filtering
-- Results list using ItemRow component
-- Each ItemRow subtitle shows category · quantity · location name
-- Empty state when no query entered: centered text "Search your
-  inventory" with a 🔍 emoji
-- Empty state when query returns no results: "No items found for
-  "{query}""
-- Pull to refresh that re-fetches all items and clears the search
-- Uses Colors from constants/colors.ts
+- Validates name and expiry_date are present
+- PATCH request to /rest/v1/items?id=eq.{id} using raw fetch +
+  session token with updated fields:
+  name, quantity, category, location_id, expiry_date, updated_at
+- On success, reschedules the expiry notification for the item
+- Navigates back to item detail screen on success
+- Shows inline error if update fails
+
+Navigation:
+
+- Back button in nav bar
+- Title "Edit item"
+- No save button in nav bar — use a full width Save button at
+  the bottom of the form instead
+
+### 2. Update `app/item/[id].tsx`
+
+- Edit button in nav bar should navigate to /item/edit passing
+  the item id as a search param
 
 ### Notes
 
-- Use raw fetch with session token for the Supabase fetch
-- All filtering is client-side — no additional network calls on
-  each keystroke
+- Use raw fetch with session token for all Supabase calls
+- Reuse the same form field patterns from app/item/add.tsx for
+  consistency
 - Use StyleSheet.create for all styles
-- After file is written run `npx tsc --noEmit` and fix any errors
+- After all files are written run `npx tsc --noEmit` and fix any errors
 - Suggest a git commit message when done

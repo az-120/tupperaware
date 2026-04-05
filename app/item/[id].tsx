@@ -176,7 +176,10 @@ export default function ItemDetailScreen() {
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
         <Text style={styles.navTitle} numberOfLines={1}>{item.name}</Text>
-        <TouchableOpacity style={styles.navBtn}>
+        <TouchableOpacity
+          style={styles.navBtn}
+          onPress={() => router.push(`/item/edit?id=${id}` as Parameters<typeof router.push>[0])}
+        >
           <Text style={styles.editText}>Edit</Text>
         </TouchableOpacity>
       </View>
