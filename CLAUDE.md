@@ -227,44 +227,76 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 
 ## Current task
 
-Task: Build the household creation flow and household detection logic.
+Task: Build the household home screen.
 
-### 1. Hook: `hooks/useHousehold.ts`
+### 1. Hook: `hooks/useLocations.ts`
 
 Create a hook that:
 
-- Fetches the current user's household by querying household_members
-  joined with households, filtered by auth.uid()
-- Returns: { household, locations, loading, error }
-- Returns household as null if the user has no household yet
+- Accepts a household_id parameter
+- Fetches all locations for that household from Supabase
+- For each location, also fetches its active items (status = 'active')
+- Returns: { locations, loading, error, refresh }
+- Each location object should include an `items` array of its active items
 
-### 2. Screen: `app/auth/create-household.tsx`
+### 2. Hook: `hooks/useItems.ts`
 
-A screen shown to new users who have no household. It should:
+Create a hook that:
 
-- Text input for household name
-- Display three default location options as selectable pills:
-  Fridge, Pantry, Freezer — all selected by default
-- A "+ Add custom location" option that appends a new text input
-- "Create household" button that:
-  1. Inserts a row into households with the given name
-  2. Inserts a row into household_members with role 'owner'
-  3. Inserts a row into locations for each selected/custom location
-  4. Navigates to /(tabs)/
-- Use Colors from constants/colors.ts for styling
-- Show inline error if any DB operation fails
+- Accepts a location_id parameter
+- Fetches all active items for that location sorted by expiry_date ASC
+- Returns: { items, loading, error, refresh }
 
-### 3. Update `app/_layout.tsx`
+### 3. Component: `components/ExpiryPill.tsx`
 
-Add a third branch to the auth gate:
+A small pill badge component that:
 
-- If loading → ActivityIndicator
-- If no session → redirect to /auth/sign-in
-- If session but no household → redirect to /auth/create-household
-- If session and household exists → redirect to /(tabs)/
+- Accepts an expiry_date string (YYYY-MM-DD)
+- Calculates days until expiry using date-fns differenceInDays
+- Returns red pill (≤2 days), amber pill (3–5 days), green pill (6+ days)
+- Text shows "X days" or "Expired" if days < 0
+- Uses Colors from constants/colors.ts
+
+### 4. Component: `components/StatCard.tsx`
+
+A small stat display card that:
+
+- Accepts a label (string) and value (string | number)
+- Accepts an optional color prop for the value text
+- Renders a muted label above a larger value number
+- Uses Colors from constants/colors.ts
+
+### 5. Component: `components/LocationCard.tsx`
+
+A card component that:
+
+- Accepts a location object (with name, icon, items array)
+- Shows location name and icon
+- Shows item count on the right
+- Shows up to 4 item chips below, each showing item name and expiry
+- Chips are color coded using ExpiryPill logic (red/amber/green background)
+- Tapping the card navigates to /location/[id]
+- Uses Colors from constants/colors.ts
+
+### 6. Screen: `app/(tabs)/index.tsx`
+
+The main household home screen:
+
+- Uses useAuth to get current user
+- Uses useHousehold to get household and check loading state
+- Uses useLocations to get locations with items
+- Shows household name and member count in header
+- Stat row with 3 StatCards: total active items, expiring soon (≤5 days), fresh (6+ days)
+- Red alert banner if any items expire within 2 days — shows count and "View" link to /expiring
+- Scrollable list of LocationCards
+- "No locations yet" empty state if none exist
+- Pull to refresh support
+- Uses Colors from constants/colors.ts
 
 ### Notes
 
-- All Supabase inserts must respect RLS — user must be authenticated
-- After all files are written, run `npx tsc --noEmit` and fix any errors
+- All Supabase fetches should use raw fetch with session token (same pattern
+  as create-household.tsx) since the Supabase JS client has auth issues
+- Use StyleSheet.create for all styles
+- After all files are written run `npx tsc --noEmit` and fix any errors
 - Suggest a git commit message when done
