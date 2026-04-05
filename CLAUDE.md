@@ -227,68 +227,55 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 
 ## Current task
 
-Task: Build the add item screen.
+Task: Build the item detail screen.
 
-### 1. Utility: `lib/openFoodFacts.ts` (update existing)
+### 1. Screen: `app/item/[id].tsx`
 
-Ensure the lookupBarcode function:
+The item detail screen:
 
-- Fetches from https://world.openfoodfacts.org/api/v0/product/{barcode}.json
-- Returns { name: string, category: string } or null if not found
-- Maps Open Food Facts categories to our app categories:
-  ('Dairy' | 'Produce' | 'Meat' | 'Frozen' | 'Pantry' | 'Other')
-- Handles network errors gracefully by returning null
+- Uses useLocalSearchParams to get item id from route
+- Fetches the item from Supabase using raw fetch + session token
+- Fetches the location name for display
+- Navigation bar shows item name, back button, and Edit button
+  (Edit can be a no-op for now)
 
-### 2. Component: `components/BarcodeScanner.tsx`
+Layout:
 
-A camera component that:
+- Header section with a large category emoji icon, item name, and
+  location name as subtitle
+- Freshness bar: a horizontal progress bar showing percentage of
+  shelf life remaining between date added (created_at) and expiry_date
+  - Bar fill color matches expiry status (red/amber/green)
+  - ExpiryPill shown next to the bar
+- Metadata rows (key/value pairs with bottom borders):
+  - Quantity
+  - Category
+  - Location
+  - Date added (formatted as MMM dd, yyyy using date-fns)
+  - Expiry date (formatted as MMM dd, yyyy)
+  - Barcode (show "Not scanned" if null)
+- Two action buttons at the bottom:
+  - "Mark as used" (green background) — updates item status to
+    'used' via raw fetch PATCH, then navigates back
+  - "Discard item" (red background) — updates item status to
+    'discarded' via raw fetch PATCH, then navigates back
+- Show a loading spinner while fetching
+- Show inline error if fetch or update fails
 
-- Uses expo-camera and expo-barcode-scanner
-- Requests camera permissions on mount, shows a message if denied
-- Shows a camera viewfinder with a centered scan target box overlay
-- Calls an onScanned(barcode: string) callback when a barcode is detected
-- Shows a "Tap to scan again" button after a successful scan
-- Uses Colors from constants/colors.ts
+### Category emoji map
 
-### 3. Screen: `app/item/add.tsx`
+Use this mapping for the header icon:
 
-The add item screen with two modes:
-
-- Uses useLocalSearchParams to get location_id from route params
-- Uses useHousehold to get available locations for the selector
-
-Segmented control at top toggling between Scan and Manual modes.
-
-Scan mode:
-
-- Shows BarcodeScanner component
-- On successful scan, calls lookupBarcode from lib/openFoodFacts.ts
-- If product found, auto-populates name and category and switches
-  to Manual mode so user can review and confirm
-- If product not found, switches to Manual mode with empty fields
-  and shows a "Product not found — enter manually" message
-
-Manual mode form fields:
-
-- Item name (text input, required)
-- Quantity (text input, optional, e.g. "1 gal", "12 ct")
-- Category (segmented or picker: Dairy, Produce, Meat, Frozen, Pantry, Other)
-- Location selector (pills showing all household locations,
-  pre-selected to the location_id passed in from route params)
-- Expiration date (date picker using @react-native-community/datetimepicker)
-- "Add item" button that:
-  1. Validates name and expiry_date are present
-  2. Inserts item into Supabase using raw fetch with session token
-  3. On success navigates back to the location view
-  4. Shows inline error if insert fails
+- Dairy → 🥛
+- Produce → 🥦
+- Meat → 🥩
+- Frozen → ❄️
+- Pantry → 🥫
+- Other → 📦
 
 ### Notes
 
-- Install @react-native-community/datetimepicker:
-  npx expo install @react-native-community/datetimepicker
-- Use raw fetch with session token for the items insert
-- added_by field should be set to the current user's id
-- status should default to 'active' on insert
-- Use StyleSheet.create for all styles
-- After all files are written run `npx tsc --noEmit` and fix any errors
+- Use raw fetch with session token for all Supabase calls
+- PATCH request to /rest/v1/items?id=eq.{id} to update status
+- After file is written run `npx tsc --noEmit` and fix any errors
 - Suggest a git commit message when done
