@@ -227,55 +227,44 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 
 ## Current task
 
-Task: Build the authentication screens and navigation shell.
+Task: Build the household creation flow and household detection logic.
 
-### 1. Auth screens
+### 1. Hook: `hooks/useHousehold.ts`
 
-Update in `app/auth/sign-in.tsx` and `app/auth/create-account.tsx`.
+Create a hook that:
 
-Sign-in screen:
+- Fetches the current user's household by querying household_members
+  joined with households, filtered by auth.uid()
+- Returns: { household, locations, loading, error }
+- Returns household as null if the user has no household yet
 
-- Email and password text inputs
-- "Sign in" button that calls supabase.auth.signInWithPassword()
-- Link to navigate to create-account screen
-- Show inline error message if login fails
+### 2. Screen: `app/auth/create-household.tsx`
 
-Create account screen:
+A screen shown to new users who have no household. It should:
 
-- Email and password text inputs
-- "Create account" button that calls supabase.auth.signUp()
-- Link to navigate back to sign-in
-- Show inline error message if signup fails
+- Text input for household name
+- Display three default location options as selectable pills:
+  Fridge, Pantry, Freezer — all selected by default
+- A "+ Add custom location" option that appends a new text input
+- "Create household" button that:
+  1. Inserts a row into households with the given name
+  2. Inserts a row into household_members with role 'owner'
+  3. Inserts a row into locations for each selected/custom location
+  4. Navigates to /(tabs)/
+- Use Colors from constants/colors.ts for styling
+- Show inline error if any DB operation fails
 
-### 2. Auth context
+### 3. Update `app/_layout.tsx`
 
-Create `hooks/useAuth.ts` — a React context + hook that:
+Add a third branch to the auth gate:
 
-- Exposes: session, user, signOut, loading
-- Listens to supabase.auth.onAuthStateChange() to keep session in sync
-- Persists session automatically (Supabase JS client handles this)
-
-### 3. Root layout with auth gate
-
-Update `app/_layout.tsx` to:
-
-- Wrap the app in the AuthProvider from useAuth
-- If loading, show a centered ActivityIndicator
-- If no session, redirect to /auth/sign-in
-- If session exists, redirect to /(tabs)/
-
-### 4. Tab layout shell
-
-Create `app/(tabs)/_layout.tsx` with a basic bottom tab navigator
-containing four tabs: Home, Expiring, Search, Profile. Placeholder
-screens for each are fine — just render a View with a centered Text
-label for now.
+- If loading → ActivityIndicator
+- If no session → redirect to /auth/sign-in
+- If session but no household → redirect to /auth/create-household
+- If session and household exists → redirect to /(tabs)/
 
 ### Notes
 
-- Use Colors from constants/colors.ts for all styling
-- Use StyleSheet.create — no inline styles longer than 2 properties
-- No third-party auth libraries — Supabase client only
-- After all files are written, run `npx tsc --noEmit` to check for
-  type errors and fix any that come up
+- All Supabase inserts must respect RLS — user must be authenticated
+- After all files are written, run `npx tsc --noEmit` and fix any errors
 - Suggest a git commit message when done
