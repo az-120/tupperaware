@@ -272,58 +272,274 @@ Every new feature task must include unit tests. Specifically:
 
 ## Current task
 
-Task: Fix profile household display and add household/location editing.
+Task: Write integration tests for hooks and core data flows.
 
-### 1. Fix `app/(tabs)/profile.tsx` household section display
+### Setup
 
-Current issue: household name and locations appear as flat equal rows.
-Fix the visual hierarchy to clearly separate them:
+Before writing any tests, check that these are in package.json
+jest config — add if missing:
 
-- Household name displayed as a large title at the top of the section
-- Below it a muted subtitle showing member count e.g. "1 member"
-- A "Locations" sub-header below that
-- Each location shown as a row with icon + name, indented slightly
-- At the bottom of the section two tappable action rows:
-  - "Edit household name ›" — navigates to /household/edit-name
-  - "Edit locations ›" — navigates to /household/edit-locations
-- Section should feel like: household name is the parent, locations are children underneath it
+```json
+"jest": {
+  "preset": "jest-expo",
+  "setupFilesAfterFramework": [
+    "@testing-library/jest-native/extend-expect"
+  ],
+  "transformIgnorePatterns": [
+    "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg)"
+  ]
+}
+```
 
-### 2. Screen: `app/household/edit-name.tsx`
+Also verify these are installed, install if missing:
 
-A simple screen for editing the household name:
+```bash
+npx expo install @testing-library/react-native
+npm install --save-dev @testing-library/jest-native
+```
 
-- Single text input pre-populated with current household name
-- Validates using validateHouseholdName from lib/validation.ts
-- Show inline error if validation fails
-- Save button that PATCHes to /rest/v1/households?id=eq.{id} using raw fetch + session token
-- On success calls useHousehold refresh() and navigates back
-- Navigation bar title "Edit household name" with back button
+### 1. Test setup file: `__tests__/setup.ts`
 
-### 3. Screen: `app/household/edit-locations.tsx`
+Create a shared test setup file that:
 
-A screen for managing locations within the household:
+- Mocks AsyncStorage:
 
-- Lists all current locations with icon and name
-- Each location row has:
-  - Icon (non-editable emoji)
-  - Editable text input for the location name
-  - A delete button (red trash icon "🗑") on the right
-  - Deleting shows a confirmation alert before proceeding
-  - DELETE request to /rest/v1/locations?id=eq.{id}
-    using raw fetch + session token
-- Below the list an "+ Add location" button that appends a new empty text input row with a default 📦 icon
-- A "Save changes" button at the bottom that:
-  - PATCHes all modified existing location names
-  - POSTs any new locations added
-  - Validates each location name is non-empty before saving
-  - On success calls useHousehold refresh() and navigates back
-- Navigation bar title "Edit locations" with back button
+```typescript
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
+);
+```
+
+- Mocks expo-notifications:
+
+```typescript
+jest.mock("expo-notifications", () => ({
+  requestPermissionsAsync: jest.fn().mockResolvedValue({status: "granted"}),
+  scheduleNotificationAsync: jest.fn().mockResolvedValue("notification-id"),
+  cancelScheduledNotificationAsync: jest.fn().mockResolvedValue(undefined),
+  cancelAllScheduledNotificationsAsync: jest.fn().mockResolvedValue(undefined),
+  addNotificationReceivedListener: jest
+    .fn()
+    .mockReturnValue({remove: jest.fn()}),
+  addNotificationResponseReceivedListener: jest
+    .fn()
+    .mockReturnValue({remove: jest.fn()}),
+}));
+```
+
+- Mocks expo-router:
+
+```typescript
+jest.mock("expo-router", () => ({
+  useRouter: () => ({replace: jest.fn(), push: jest.fn(), back: jest.fn()}),
+  useLocalSearchParams: () => ({}),
+}));
+```
+
+- Sets up global fetch mock:
+
+```typescript
+global.fetch = jest.fn();
+```
+
+- Add to jest config in package.json:
+
+```json
+"setupFilesAfterFramework": ["@testing-library/jest-native/extend-expect"],
+"setupFiles": ["./__tests__/setup.ts"]
+```
+
+### 2. `__tests__/useItems.test.ts`
+
+Integration tests for hooks/useItems.ts:
+
+```typescript
+describe("useItems", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("fetches and returns active items sorted by expiry_date asc");
+  // mock fetch returning 2 items out of order
+  // verify returned items are sorted by expiry_date ASC
+
+  it("returns empty array when location has no items");
+  // mock fetch returning []
+  // verify items is []
+
+  it("sets loading true initially then false after fetch");
+  // verify loading starts true
+  // after waitFor verify loading is false
+
+  it("sets error when fetch fails");
+  // mock fetch throwing a network error
+  // verify error is set and items is []
+
+  it("sets error when fetch returns non-ok response");
+  // mock fetch returning { ok: false, status: 403 }
+  // verify error is set
+
+  it("refresh function re-fetches items");
+  // call refresh()
+  // verify fetch was called twice total
+});
+```
+
+### 3. `__tests__/useLocations.test.ts`
+
+Integration tests for hooks/useLocations.ts:
+
+```typescript
+describe("useLocations", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("fetches locations for a household");
+  // mock fetch returning 3 locations
+  // verify all 3 are returned
+
+  it("fetches items for each location");
+  // mock fetch returning locations with nested items
+  // verify each location has an items array
+
+  it("returns empty array when household has no locations");
+  // mock fetch returning []
+  // verify locations is []
+
+  it("sets loading false after successful fetch");
+
+  it("sets error on fetch failure");
+
+  it("refresh re-fetches locations");
+});
+```
+
+### 4. `__tests__/useHousehold.test.ts`
+
+Integration tests for hooks/useHousehold.ts:
+
+```typescript
+describe("useHousehold", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("returns null household when user has no household");
+  // mock fetch returning []
+  // verify household is null
+
+  it("returns household when user is a member");
+  // mock fetch returning a household row
+  // verify household name matches
+
+  it("returns locations alongside household");
+  // mock fetch returning household with locations
+  // verify locations array is populated
+
+  it("sets loading false after fetch");
+
+  it("sets error on fetch failure");
+
+  it("refresh re-fetches household data");
+});
+```
+
+### 5. `__tests__/useAuth.test.ts`
+
+Integration tests for hooks/useAuth.ts:
+
+```typescript
+describe("useAuth", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("returns null user when no session exists");
+  // mock supabase.auth.getSession returning null session
+  // verify user is null
+
+  it("returns user when session exists");
+  // mock supabase.auth.getSession returning valid session
+  // verify user.id matches
+
+  it("signOut calls supabase.auth.signOut");
+  // call signOut()
+  // verify supabase.auth.signOut was called
+
+  it("updates user when auth state changes");
+  // trigger onAuthStateChange with a new session
+  // verify user updates accordingly
+});
+```
+
+### 6. `__tests__/addItemFlow.test.ts`
+
+Integration test for the full add item submission flow:
+
+```typescript
+describe("Add item flow", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("submits valid item successfully");
+  // render add item screen with a location_id param
+  // fill in item name, category, expiry date
+  // tap Add item button
+  // verify fetch was called with correct body
+  // verify navigation.back() was called
+
+  it("shows validation error when name is empty");
+  // render add item screen
+  // tap Add item without filling name
+  // verify inline error message is visible
+
+  it("shows validation error when expiry date is missing");
+  // render add item screen
+  // fill name but not expiry
+  // tap Add item
+  // verify inline error is visible
+
+  it("shows error message when Supabase insert fails");
+  // mock fetch returning 403
+  // fill valid form and submit
+  // verify error message is shown on screen
+
+  it("auto-populates expiry date when category is selected");
+  // render add item screen
+  // select Dairy category
+  // verify expiry date picker updates to ~7 days from now
+
+  it("auto-populates expiry date when known item name is typed");
+  // type 'eggs' in name field
+  // wait for debounce
+  // verify expiry date updates to ~21 days from now
+});
+```
+
+### 7. Update `__tests__/expiryDefaults.test.ts`
+
+Add these additional integration-level test cases:
+
+- getSuggestedExpiryDate returns a normalized date (hours set to 12)
+- getSuggestedExpiryDate for 'eggs' returns date ~21 days from now
+- getSuggestedExpiryDate for unknown item falls back to category default
+- normalizeDate sets hours to 12 regardless of input time
+- normalizeDate does not change the date when called at noon
 
 ### Notes
 
-- Create the app/household/ directory
-- Use raw fetch with session token for all Supabase calls
-- Use validateHouseholdName from lib/validation.ts for household name
-- Use StyleSheet.create for all styles
-- After all files written run `npx tsc --noEmit` and fix any errors
+- All hooks likely use raw fetch — mock global.fetch in setup.ts
+- Mock supabase auth methods where needed:
+
+```typescript
+jest.mock("../lib/supabase", () => ({
+  supabase: {
+    auth: {
+      getSession: jest.fn(),
+      signOut: jest.fn(),
+      onAuthStateChange: jest.fn(() => ({
+        data: {subscription: {unsubscribe: jest.fn()}},
+      })),
+    },
+  },
+}));
+```
+
+- Use renderHook and waitFor from @testing-library/react-native
+  for all hook tests
+- Use render and fireEvent for the addItemFlow screen test
+- After all test files are written run `npm test` and fix ALL
+  failing tests before committing
 - Suggest a git commit message when done
