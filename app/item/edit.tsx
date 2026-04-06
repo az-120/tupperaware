@@ -14,6 +14,7 @@ import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/dat
 import { useHousehold } from "../../hooks/useHousehold";
 import { scheduleExpiryNotification } from "../../lib/notifications";
 import { validateItemName } from "../../lib/validation";
+import { getSuggestedExpiryDate, normalizeDate } from "../../lib/expiryDefaults";
 import { supabase } from "../../lib/supabase";
 import { Colors } from "../../constants/colors";
 import { Item, ItemCategory } from "../../types";
@@ -71,7 +72,7 @@ export default function EditItemScreen() {
       setQuantity(item.quantity ?? "");
       setCategory(item.category);
       setLocationId(item.location_id);
-      setExpiryDate(new Date(item.expiry_date));
+      setExpiryDate(normalizeDate(item.expiry_date));
       setFetching(false);
     })();
   }, [id]);
@@ -89,7 +90,7 @@ export default function EditItemScreen() {
     setError(null);
 
     const headers = await getHeaders();
-    const expiryStr = expiryDate.toISOString().split("T")[0];
+    const expiryStr = normalizeDate(expiryDate).toISOString().split("T")[0];
 
     const res = await fetch(
       `${process.env.EXPO_PUBLIC_SUPABASE_URL}/rest/v1/items?id=eq.${id}`,
@@ -210,13 +211,17 @@ export default function EditItemScreen() {
           <DateTimePicker
             value={expiryDate}
             mode="date"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
+            display={Platform.OS === "ios" ? "inline" : "default"}
             onChange={(_event: DateTimePickerEvent, date?: Date) => {
               if (date) setExpiryDate(date);
             }}
-            style={styles.datePickerWidget}
           />
         </View>
+        <TouchableOpacity
+          onPress={() => setExpiryDate(getSuggestedExpiryDate(name, category))}
+        >
+          <Text style={styles.resetDateText}>Reset to suggested date</Text>
+        </TouchableOpacity>
 
         {error && <Text style={styles.error}>{error}</Text>}
 
@@ -336,13 +341,16 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     overflow: "hidden",
   },
-  datePickerWidget: {
-    height: 120,
-  },
   error: {
     color: Colors.red,
     fontSize: 14,
     marginTop: 16,
+  },
+  resetDateText: {
+    fontSize: 13,
+    color: Colors.blue,
+    marginTop: 8,
+    fontWeight: "500",
   },
   saveBtn: {
     backgroundColor: Colors.blue,

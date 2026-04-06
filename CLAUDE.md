@@ -100,13 +100,12 @@ items
 
 - [x] Auth — Supabase email/password sign in + sign up
 - [x] Household creation with custom name + default locations
-- [ ] Invite members by email
 - [x] Location cards on home screen with item chips
 - [x] Expiry status pills: red (≤2 days), amber (3–5 days), green (6+ days)
 - [x] Add item — manual form (name, qty, category, location, expiry date)
 - [x] Add item — barcode scan → auto-fill name via Open Food Facts API
 - [x] Item detail — mark as used / discard
-- [ ] Expiry alerts — push notifications 1 day before expiry
+- [x] Expiry alerts — push notifications 1 day before expiry
 - [x] Stat cards on home (total items, expiring soon, fresh count)
 
 ## V2 / stretch features
@@ -115,6 +114,7 @@ items
 - [ ] Recipe suggestions based on items expiring soon
 - [ ] Waste tracking analytics (used vs discarded over time)
 - [ ] Nutritional info from Open Food Facts
+- [ ] Invite members by email
 - [ ] Shared household real-time sync (Supabase Realtime)
 
 ---
