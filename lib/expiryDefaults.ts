@@ -112,7 +112,7 @@ export function getSuggestedExpiryDate(name: string, category: string): Date {
   const days = getExpiryDays(name, category);
   const date = new Date();
   date.setDate(date.getDate() + days);
-  return date;
+  return normalizeDate(date);
 }
 
 /**

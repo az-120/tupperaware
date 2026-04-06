@@ -227,33 +227,149 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 
 ## Current task
 
-Task 1 of 3: Standardize expiration date picker to calendar view on
-both add and edit screens.
+Task 3 of 3: Add predetermined expiration date suggestions based on
+item name and category.
 
 ### Goal
 
-Make the date picker consistent across app/item/add.tsx and
-app/item/edit.tsx — both should use the calendar view style.
+When a user is adding or editing an item, the expiry date picker
+should auto-suggest a sensible default based on the item name and
+category. The user can always override it manually.
 
-### Changes needed
+### 1. Update `lib/expiryDefaults.ts`
 
-`app/item/add.tsx`:
+Add the following to the existing file:
 
-- Find the date picker component (likely DateTimePicker from
-  @react-native-community/datetimepicker)
-- Set display prop to 'calendar' on iOS
-- Ensure it shows inline in the form (not as a modal)
-- Style the container to match the rest of the form
+A common foods dictionary:
 
-`app/item/edit.tsx`:
+```typescript
+const FOOD_EXPIRY_DAYS: Record<string, number> = {
+  // Dairy
+  milk: 7,
+  "whole milk": 7,
+  "skim milk": 7,
+  "oat milk": 7,
+  "almond milk": 7,
+  eggs: 21,
+  egg: 21,
+  butter: 30,
+  "cream cheese": 14,
+  "cottage cheese": 7,
+  "sour cream": 14,
+  "heavy cream": 14,
+  yogurt: 14,
+  "greek yogurt": 14,
+  cheddar: 30,
+  cheese: 21,
+  mozzarella: 14,
+  parmesan: 60,
+  // Produce
+  spinach: 5,
+  lettuce: 5,
+  kale: 7,
+  arugula: 4,
+  broccoli: 5,
+  cauliflower: 7,
+  carrots: 21,
+  celery: 14,
+  cucumber: 7,
+  zucchini: 7,
+  "bell pepper": 7,
+  tomato: 5,
+  strawberries: 4,
+  blueberries: 7,
+  raspberries: 3,
+  grapes: 7,
+  apple: 30,
+  banana: 5,
+  avocado: 4,
+  lemon: 21,
+  lime: 21,
+  orange: 14,
+  // Meat
+  chicken: 3,
+  "chicken breast": 3,
+  "ground beef": 2,
+  beef: 3,
+  pork: 3,
+  bacon: 7,
+  salmon: 2,
+  fish: 2,
+  shrimp: 2,
+  turkey: 3,
+  ham: 5,
+  sausage: 3,
+  // Frozen
+  "frozen chicken": 90,
+  "frozen beef": 90,
+  "frozen fish": 90,
+  "ice cream": 60,
+  "frozen pizza": 60,
+  "frozen vegetables": 180,
+  // Pantry
+  bread: 7,
+  sourdough: 5,
+  bagel: 5,
+  tortilla: 14,
+  pasta: 365,
+  rice: 365,
+  oats: 365,
+  cereal: 180,
+  "peanut butter": 180,
+  jam: 180,
+  honey: 730,
+  "olive oil": 365,
+  mayo: 60,
+  ketchup: 180,
+  mustard: 180,
+  "hot sauce": 365,
+  "soy sauce": 365,
+  juice: 7,
+  "orange juice": 7,
+};
+```
 
-- Apply the exact same calendar display changes as add.tsx
-- Ensure the pre-populated date renders correctly in calendar view
+Export these functions:
+
+```typescript
+export function getExpiryDays(name: string, category: string): number;
+// 1. Lowercase name, check exact match in FOOD_EXPIRY_DAYS
+// 2. If no exact match, check if any key is contained in name
+// 3. Fall back to category defaults:
+//    Dairy→7, Produce→5, Meat→3, Frozen→90, Pantry→180, Other→7
+
+export function getSuggestedExpiryDate(name: string, category: string): Date;
+// Calls getExpiryDays(), adds that many days to today,
+// applies normalizeDate() before returning
+```
+
+### 2. Update `app/item/add.tsx`
+
+- Import getExpiryDays and getSuggestedExpiryDate
+- Add a boolean state variable `dateManuallyEdited` initialized to false
+- When category changes: if !dateManuallyEdited, call
+  getSuggestedExpiryDate() and update the date picker
+- When item name changes, use a 500ms debounce: if !dateManuallyEdited,
+  call getSuggestedExpiryDate() and update the date picker
+- When barcode scan auto-populates name and category: set
+  dateManuallyEdited to false and call getSuggestedExpiryDate()
+- When user manually changes the date picker: set dateManuallyEdited
+  to true
+- Show muted hint text below date picker when !dateManuallyEdited:
+  "Suggested based on item type — tap to adjust"
+  Hide hint when dateManuallyEdited is true
+
+### 3. Update `app/item/edit.tsx`
+
+- Import getSuggestedExpiryDate
+- Add a "Reset to suggested date" text button below the date picker
+- Tapping it calls getSuggestedExpiryDate() with current name and
+  category and resets the date picker
 
 ### Notes
 
-- Do not change any other logic — this task is UI consistency only
-- Do not touch expiry defaults or date normalization yet
-- After changes run `npx tsc --noEmit` and fix any errors
-- Press r to reload and visually confirm both screens show calendar view
+- normalizeDate is already in lib/expiryDefaults.ts from Task 2 —
+  use it inside getSuggestedExpiryDate
+- Do not change any picker UI from Task 1
+- After all files written run `npx tsc --noEmit` and fix any errors
 - Suggest a git commit message when done
