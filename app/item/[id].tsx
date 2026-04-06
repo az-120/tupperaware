@@ -41,7 +41,7 @@ function formatDate(dateStr: string): string {
 
 function freshnessPercent(createdAt: string, expiryDate: string): number {
   const added = new Date(createdAt).getTime();
-  const expiry = new Date(expiryDate).getTime();
+  const expiry = new Date(expiryDate + "T12:00:00").getTime();
   const now = Date.now();
   const total = expiry - added;
   if (total <= 0) return 0;
@@ -217,7 +217,7 @@ export default function ItemDetailScreen() {
           <MetaRow label="Category" value={item.category} />
           <MetaRow label="Location" value={location ? `${location.icon} ${location.name}` : "—"} />
           <MetaRow label="Date added" value={formatDate(item.created_at)} />
-          <MetaRow label="Expiry date" value={formatDate(item.expiry_date)} />
+          <MetaRow label="Expiry date" value={formatDate(item.expiry_date + "T12:00:00")} />
           <MetaRow label="Barcode" value={item.barcode ?? "Not scanned"} last />
         </View>
 

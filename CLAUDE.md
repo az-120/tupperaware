@@ -100,13 +100,12 @@ items
 
 - [x] Auth — Supabase email/password sign in + sign up
 - [x] Household creation with custom name + default locations
-- [ ] Invite members by email
 - [x] Location cards on home screen with item chips
 - [x] Expiry status pills: red (≤2 days), amber (3–5 days), green (6+ days)
 - [x] Add item — manual form (name, qty, category, location, expiry date)
 - [x] Add item — barcode scan → auto-fill name via Open Food Facts API
 - [x] Item detail — mark as used / discard
-- [ ] Expiry alerts — push notifications 1 day before expiry
+- [x] Expiry alerts — push notifications 1 day before expiry
 - [x] Stat cards on home (total items, expiring soon, fresh count)
 
 ## V2 / stretch features
@@ -115,6 +114,7 @@ items
 - [ ] Recipe suggestions based on items expiring soon
 - [ ] Waste tracking analytics (used vs discarded over time)
 - [ ] Nutritional info from Open Food Facts
+- [ ] Invite members by email
 - [ ] Shared household real-time sync (Supabase Realtime)
 
 ---
@@ -227,55 +227,149 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 
 ## Current task
 
-Task: Build the edit item screen.
+Task 3 of 3: Add predetermined expiration date suggestions based on
+item name and category.
 
-### 1. Screen: `app/item/edit.tsx`
+### Goal
 
-A screen for editing an existing item, pre-populated with current values:
+When a user is adding or editing an item, the expiry date picker
+should auto-suggest a sensible default based on the item name and
+category. The user can always override it manually.
 
-Data:
+### 1. Update `lib/expiryDefaults.ts`
 
-- Uses useLocalSearchParams to get item id from route
-- On mount, fetches the item from Supabase using raw fetch + session token
-- Uses useHousehold to get available locations for the location selector
+Add the following to the existing file:
 
-Form fields (identical to add item manual form, pre-populated):
+A common foods dictionary:
 
-- Item name (text input, required)
-- Quantity (text input, optional)
-- Category selector (Dairy, Produce, Meat, Frozen, Pantry, Other)
-  pre-selected to current category
-- Location selector (pills showing all household locations)
-  pre-selected to current location_id
-- Expiration date (date picker) pre-set to current expiry_date
+```typescript
+const FOOD_EXPIRY_DAYS: Record<string, number> = {
+  // Dairy
+  milk: 7,
+  "whole milk": 7,
+  "skim milk": 7,
+  "oat milk": 7,
+  "almond milk": 7,
+  eggs: 21,
+  egg: 21,
+  butter: 30,
+  "cream cheese": 14,
+  "cottage cheese": 7,
+  "sour cream": 14,
+  "heavy cream": 14,
+  yogurt: 14,
+  "greek yogurt": 14,
+  cheddar: 30,
+  cheese: 21,
+  mozzarella: 14,
+  parmesan: 60,
+  // Produce
+  spinach: 5,
+  lettuce: 5,
+  kale: 7,
+  arugula: 4,
+  broccoli: 5,
+  cauliflower: 7,
+  carrots: 21,
+  celery: 14,
+  cucumber: 7,
+  zucchini: 7,
+  "bell pepper": 7,
+  tomato: 5,
+  strawberries: 4,
+  blueberries: 7,
+  raspberries: 3,
+  grapes: 7,
+  apple: 30,
+  banana: 5,
+  avocado: 4,
+  lemon: 21,
+  lime: 21,
+  orange: 14,
+  // Meat
+  chicken: 3,
+  "chicken breast": 3,
+  "ground beef": 2,
+  beef: 3,
+  pork: 3,
+  bacon: 7,
+  salmon: 2,
+  fish: 2,
+  shrimp: 2,
+  turkey: 3,
+  ham: 5,
+  sausage: 3,
+  // Frozen
+  "frozen chicken": 90,
+  "frozen beef": 90,
+  "frozen fish": 90,
+  "ice cream": 60,
+  "frozen pizza": 60,
+  "frozen vegetables": 180,
+  // Pantry
+  bread: 7,
+  sourdough: 5,
+  bagel: 5,
+  tortilla: 14,
+  pasta: 365,
+  rice: 365,
+  oats: 365,
+  cereal: 180,
+  "peanut butter": 180,
+  jam: 180,
+  honey: 730,
+  "olive oil": 365,
+  mayo: 60,
+  ketchup: 180,
+  mustard: 180,
+  "hot sauce": 365,
+  "soy sauce": 365,
+  juice: 7,
+  "orange juice": 7,
+};
+```
 
-Save button:
+Export these functions:
 
-- Validates name and expiry_date are present
-- PATCH request to /rest/v1/items?id=eq.{id} using raw fetch +
-  session token with updated fields:
-  name, quantity, category, location_id, expiry_date, updated_at
-- On success, reschedules the expiry notification for the item
-- Navigates back to item detail screen on success
-- Shows inline error if update fails
+```typescript
+export function getExpiryDays(name: string, category: string): number;
+// 1. Lowercase name, check exact match in FOOD_EXPIRY_DAYS
+// 2. If no exact match, check if any key is contained in name
+// 3. Fall back to category defaults:
+//    Dairy→7, Produce→5, Meat→3, Frozen→90, Pantry→180, Other→7
 
-Navigation:
+export function getSuggestedExpiryDate(name: string, category: string): Date;
+// Calls getExpiryDays(), adds that many days to today,
+// applies normalizeDate() before returning
+```
 
-- Back button in nav bar
-- Title "Edit item"
-- No save button in nav bar — use a full width Save button at
-  the bottom of the form instead
+### 2. Update `app/item/add.tsx`
 
-### 2. Update `app/item/[id].tsx`
+- Import getExpiryDays and getSuggestedExpiryDate
+- Add a boolean state variable `dateManuallyEdited` initialized to false
+- When category changes: if !dateManuallyEdited, call
+  getSuggestedExpiryDate() and update the date picker
+- When item name changes, use a 500ms debounce: if !dateManuallyEdited,
+  call getSuggestedExpiryDate() and update the date picker
+- When barcode scan auto-populates name and category: set
+  dateManuallyEdited to false and call getSuggestedExpiryDate()
+- When user manually changes the date picker: set dateManuallyEdited
+  to true
+- Show muted hint text below date picker when !dateManuallyEdited:
+  "Suggested based on item type — tap to adjust"
+  Hide hint when dateManuallyEdited is true
 
-- Edit button in nav bar should navigate to /item/edit passing
-  the item id as a search param
+### 3. Update `app/item/edit.tsx`
+
+- Import getSuggestedExpiryDate
+- Add a "Reset to suggested date" text button below the date picker
+- Tapping it calls getSuggestedExpiryDate() with current name and
+  category and resets the date picker
 
 ### Notes
 
-- Use raw fetch with session token for all Supabase calls
-- Reuse the same form field patterns from app/item/add.tsx for
-  consistency
-- Use StyleSheet.create for all styles
-- After all files are written run `npx tsc --noEmit` and fix any errors
+- normalizeDate is already in lib/expiryDefaults.ts from Task 2 —
+  use it inside getSuggestedExpiryDate
+- Do not change any picker UI from Task 1
+- After all files written run `npx tsc --noEmit` and fix any errors
 - Suggest a git commit message when done

@@ -8,7 +8,7 @@ import {
   StyleSheet,
   Platform,
 } from "react-native";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useAuth } from "../../hooks/useAuth";
@@ -17,6 +17,7 @@ import { BarcodeScanner } from "../../components/BarcodeScanner";
 import { lookupBarcode } from "../../lib/openFoodFacts";
 import { supabase } from "../../lib/supabase";
 import { scheduleExpiryNotification } from "../../lib/notifications";
+import { getSuggestedExpiryDate, normalizeDate } from "../../lib/expiryDefaults";
 import { Colors } from "../../constants/colors";
 import { Item, ItemCategory } from "../../types";
 
@@ -42,6 +43,28 @@ export default function AddItemScreen() {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDateSuggested, setIsDateSuggested] = useState(false);
+  const dateManuallyEditedRef = useRef(false);
+
+  // Debounce name → auto-suggest date
+  useEffect(() => {
+    if (dateManuallyEditedRef.current || !name.trim()) return;
+    const timer = setTimeout(() => {
+      if (!dateManuallyEditedRef.current) {
+        setExpiryDate(getSuggestedExpiryDate(name, category));
+        setIsDateSuggested(true);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [name]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleCategoryChange = (cat: ItemCategory) => {
+    setCategory(cat);
+    if (!dateManuallyEditedRef.current) {
+      setExpiryDate(getSuggestedExpiryDate(name, cat));
+      setIsDateSuggested(true);
+    }
+  };
 
   const handleScanned = async (barcode: string) => {
     setLooking(true);
@@ -50,6 +73,9 @@ export default function AddItemScreen() {
     if (result) {
       setName(result.name);
       setCategory(result.category);
+      setExpiryDate(getSuggestedExpiryDate(result.name, result.category));
+      setIsDateSuggested(true);
+      dateManuallyEditedRef.current = false;
       setProductNotFound(false);
     } else {
       setName("");
@@ -76,7 +102,7 @@ export default function AddItemScreen() {
     setError(null);
 
     const session = (await supabase.auth.getSession()).data.session;
-    const expiryStr = expiryDate.toISOString().split("T")[0];
+    const expiryStr = normalizeDate(expiryDate).toISOString().split("T")[0];
 
     const res = await fetch(
       `${process.env.EXPO_PUBLIC_SUPABASE_URL}/rest/v1/items`,
@@ -190,7 +216,7 @@ export default function AddItemScreen() {
               <TouchableOpacity
                 key={cat}
                 style={[styles.pill, category === cat && styles.pillActive]}
-                onPress={() => setCategory(cat)}
+                onPress={() => handleCategoryChange(cat)}
               >
                 <Text style={[styles.pillText, category === cat && styles.pillTextActive]}>
                   {cat}
@@ -219,14 +245,22 @@ export default function AddItemScreen() {
             <DateTimePicker
               value={expiryDate}
               mode="date"
-              display={Platform.OS === "ios" ? "spinner" : "default"}
+              display={Platform.OS === "ios" ? "inline" : "default"}
               minimumDate={new Date()}
               onChange={(_event: DateTimePickerEvent, date?: Date) => {
-                if (date) setExpiryDate(date);
+                if (date) {
+                  setExpiryDate(date);
+                  dateManuallyEditedRef.current = true;
+                  setIsDateSuggested(false);
+                }
               }}
-              style={styles.datePickerWidget}
             />
           </View>
+          {isDateSuggested && (
+            <Text style={styles.dateHint}>
+              Suggested based on item type — tap to adjust
+            </Text>
+          )}
 
           {error && <Text style={styles.error}>{error}</Text>}
 
@@ -388,8 +422,11 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     overflow: "hidden",
   },
-  datePickerWidget: {
-    height: 120,
+  dateHint: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 6,
+    fontStyle: "italic",
   },
   error: {
     color: Colors.red,
