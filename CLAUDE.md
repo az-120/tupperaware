@@ -272,54 +272,160 @@ Every new feature task must include unit tests. Specifically:
 
 ## Current task
 
-Task 1 of 3: Restructure navigation — remove expiring tab, add recipes
-tab shell, move expiring screen to stack.
+Task 2 of 3: Build the Anthropic API utility and smart suggestions
+mode on the recipes tab.
 
-### 1. Move expiring screen to stack navigation
+### 1. Utility: `lib/anthropic.ts`
 
-- Copy contents of `app/(tabs)/expiring.tsx` to `app/expiring.tsx`
-- Update `app/expiring.tsx`:
-  - Remove any tab-specific navigation assumptions
-  - Add a proper stack header with back button
-  - Title should be "Expiring items"
-- Delete `app/(tabs)/expiring.tsx`
+Create a utility for calling the Anthropic API:
 
-### 2. Update home screen banner link
+```typescript
+export interface Recipe {
+  name: string;
+  emoji: string;
+  usesItems: string[];
+  urgentItems: string[];
+  description: string;
+  cookTime: string;
+  difficulty: "Easy" | "Medium" | "Hard";
+}
+```
 
-In `app/(tabs)/index.tsx`:
+Export an async function `fetchRecipeSuggestions`:
 
-- Find the "View" link on the red alert banner
-- Change navigation target from `/(tabs)/expiring` to `/expiring`
-- This pushes expiring as a stack screen with a back button
+```typescript
+export async function fetchRecipeSuggestions(
+  urgent: Item[], // expiry ≤ 2 days
+  soon: Item[], // expiry 3-5 days
+  fresh: Item[], // expiry 6+ days
+): Promise;
+```
 
-### 3. Remove expiring tab, add recipes tab shell
+The function should:
 
-In `app/(tabs)/_layout.tsx`:
+- Build a prompt using the three weighted item tiers:
 
-- Remove the expiring tab entirely
-- Add a new recipes tab:
-  - name: "recipes"
-  - title: "Recipes"
-  - tabBarIcon: 🍳 emoji
-- Tab order should be: Home, Recipes, Search, Profile
+```text
+You are a helpful cooking assistant. Suggest recipes based on
+available ingredients, prioritizing items that expire soonest.
+URGENT - expires in 1-2 days:
+${urgent items or '(none)'}
+EXPIRING SOON - expires in 3-5 days:
+${soon items or '(none)'}
+IN STOCK - 6+ days remaining:
+${fresh items or '(none)'}
+Rules:
 
-### 4. Create recipes tab shell `app/(tabs)/recipes.tsx`
+Prioritize using URGENT and EXPIRING SOON items first
+Each recipe must use at least one item from the list
+Common pantry staples (salt, pepper, oil, basic spices) are
+always available and can be assumed
+Suggest exactly 3 recipes (or fewer if very limited ingredients)
+Respond ONLY with a valid JSON array, no markdown, no explanation:
+[{
+"name": string,
+"emoji": string,
+"usesItems": string[],
+"urgentItems": string[],
+"description": string (2 sentences max),
+"cookTime": string,
+"difficulty": "Easy" | "Medium" | "Hard"
+}]
+```
 
-A placeholder screen for now:
+- Call the Anthropic API:
 
-- Centered text "Recipes coming soon"
-- Title "Recipes" in nav bar
-- Uses Colors from constants/colors.ts
-- We will replace this entirely in Task 2
+```typescript
+const response = await fetch("https://api.anthropic.com/v1/messages", {
+  method: "POST",
+  headers: {
+    "x-api-key": process.env.ANTHROPIC_API_KEY!,
+    "anthropic-version": "2023-06-01",
+    "content-type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 1024,
+    messages: [{role: "user", content: prompt}],
+  }),
+});
+```
+
+- Parse the response: extract text from
+  `data.content[0].text`, strip any markdown fences,
+  parse as JSON array
+- Return parsed Recipe[] array
+- On any error (network, parse, API error) throw with
+  a descriptive message
+
+### 2. Unit tests: `__tests__/anthropic.test.ts`
+
+Write tests for lib/anthropic.ts:
+
+- Mock global fetch
+- Test successful response returns parsed Recipe array
+- Test malformed JSON response throws error
+- Test network error throws error
+- Test empty inventory returns recipes array
+- Verify correct headers are sent in the request
+- Verify model is claude-sonnet-4-20250514
+
+### 3. Screen: `app/(tabs)/recipes.tsx` — smart mode only
+
+Replace the placeholder with the full smart suggestions screen.
+For now implement smart mode only (pick mode comes in Task 3).
+
+Layout:
+
+- Screen title "Recipes" in nav bar
+- Uses useAuth and useHousehold to get household
+- Uses useItems-style raw fetch to get ALL active items
+  across all household locations (same query as search screen)
+- Splits items into three tiers using getExpiryStatus from
+  types/index.ts:
+  - urgent: status === 'critical' or 'expired'
+  - soon: status === 'warning'
+  - fresh: status === 'fresh'
+
+Top section — inventory summary:
+
+- Muted text showing e.g. "3 expiring soon · 12 total items"
+- If 0 items total show empty state: "Add some items to your
+  inventory to get recipe suggestions"
+
+Segmented control:
+
+- Two options: "Smart pick" and "I'll choose"
+- For now "I'll choose" shows "Coming in next update" placeholder
+- We will replace this in Task 3
+
+Smart pick section:
+
+- A card with:
+  - Title "What can I cook tonight?"
+  - Subtitle "Claude will prioritize your expiring items"
+  - "Suggest recipes →" button
+- Loading state: replace button with spinner +
+  "Asking Claude..." text
+- Error state: show error message in red with "Try again" button
+
+Recipe cards (shown after generation):
+
+- Each recipe in a card with:
+  - Emoji + name on the same line, difficulty badge on the right
+    (green=Easy, amber=Medium, red=Hard)
+  - "Uses: item1 ⚠️, item2, item3" — ⚠️ on urgentItems only
+  - Description text (muted, smaller)
+  - Cook time with ⏱ icon at bottom
+- Below all cards a "↺ Regenerate" text button
+- Caching: store recipes in state with an itemsFingerprint
+  (all active item IDs joined and sorted)
+  Only re-fetch if fingerprint changes or user taps Regenerate
 
 ### Notes
 
-- Do not build any recipe functionality yet — Task 1 is
-  navigation restructuring only
-- After changes run `npx tsc --noEmit` and fix any errors
-- Verify in the app that:
-  - Four tabs show: Home, Recipes, Search, Profile
-  - Tapping "View" on home banner navigates to expiring screen
-    with a back button
-  - Recipes tab shows placeholder text
+- ANTHROPIC*API_KEY is in .env.local without EXPO_PUBLIC* prefix
+- Use StyleSheet.create for all styles
+- After all files written run `npm test` and `npx tsc --noEmit`
+  fix all errors before committing
 - Suggest a git commit message when done
