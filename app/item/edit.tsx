@@ -13,6 +13,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useHousehold } from "../../hooks/useHousehold";
 import { scheduleExpiryNotification } from "../../lib/notifications";
+import { getSuggestedExpiryDate } from "../../lib/expiryDefaults";
 import { supabase } from "../../lib/supabase";
 import { Colors } from "../../constants/colors";
 import { Item, ItemCategory } from "../../types";
@@ -214,6 +215,11 @@ export default function EditItemScreen() {
             style={styles.datePickerWidget}
           />
         </View>
+        <TouchableOpacity
+          onPress={() => setExpiryDate(getSuggestedExpiryDate(name, category))}
+        >
+          <Text style={styles.resetDateText}>Reset to suggested date</Text>
+        </TouchableOpacity>
 
         {error && <Text style={styles.error}>{error}</Text>}
 
@@ -332,6 +338,12 @@ const styles = StyleSheet.create({
     color: Colors.red,
     fontSize: 14,
     marginTop: 16,
+  },
+  resetDateText: {
+    fontSize: 13,
+    color: Colors.blue,
+    marginTop: 8,
+    fontWeight: "500",
   },
   saveBtn: {
     backgroundColor: Colors.blue,
