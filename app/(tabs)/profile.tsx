@@ -6,9 +6,11 @@ import {
   Alert,
   StyleSheet,
 } from "react-native";
+import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../hooks/useAuth";
 import { useHousehold } from "../../hooks/useHousehold";
+import { supabase } from "../../lib/supabase";
 import { Colors } from "../../constants/colors";
 
 function initials(email: string): string {
@@ -31,6 +33,27 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
   const { household, locations } = useHousehold();
+  const [memberCount, setMemberCount] = useState<number>(1);
+
+  useEffect(() => {
+    if (!household) return;
+    (async () => {
+      const session = (await supabase.auth.getSession()).data.session;
+      const res = await fetch(
+        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/rest/v1/household_members?household_id=eq.${household.id}&select=id`,
+        {
+          headers: {
+            apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
+            Authorization: `Bearer ${session?.access_token ?? ""}`,
+          },
+        },
+      );
+      if (res.ok) {
+        const data = (await res.json()) as { id: string }[];
+        setMemberCount(data.length);
+      }
+    })();
+  }, [household?.id]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -67,50 +90,66 @@ export default function ProfileScreen() {
       {/* Household */}
       <Text style={styles.sectionLabel}>Household</Text>
       <View style={styles.card}>
-        <View style={[styles.row, styles.rowBorder]}>
-          <Text style={styles.rowLabel}>🏠  {household?.name ?? "—"}</Text>
+        {/* Name + member count */}
+        <View style={styles.householdHeader}>
+          <Text style={styles.householdName}>{household?.name ?? "—"}</Text>
+          <Text style={styles.memberCountText}>
+            {memberCount} {memberCount === 1 ? "member" : "members"}
+          </Text>
         </View>
 
-        {locations.map((loc, index) => (
-          <View
-            key={loc.id}
-            style={[styles.row, index < locations.length - 1 && styles.rowBorder]}
-          >
-            <Text style={styles.rowLabel}>
-              {loc.icon}  {loc.name}
-            </Text>
-          </View>
-        ))}
-
-        <View style={[styles.row, styles.rowTop]}>
-          <TouchableOpacity style={styles.rowInner} onPress={comingSoon}>
-            <Text style={[styles.rowLabel, styles.rowAction]}>+ Invite member</Text>
-            <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
+        {/* Locations sub-section */}
+        <View style={styles.locationsSection}>
+          <Text style={styles.locationsLabel}>Locations</Text>
+          {locations.map((loc) => (
+            <View key={loc.id} style={styles.locationRow}>
+              <Text style={styles.locationText}>{loc.icon}  {loc.name}</Text>
+            </View>
+          ))}
         </View>
+
+        {/* Edit action rows */}
+        <TouchableOpacity
+          style={[styles.actionRow, styles.rowTopBorder]}
+          onPress={() =>
+            router.push(
+              "/household/edit-name" as Parameters<typeof router.push>[0],
+            )
+          }
+        >
+          <Text style={styles.actionLabel}>Edit household name</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionRow}
+          onPress={() =>
+            router.push(
+              "/household/edit-locations" as Parameters<typeof router.push>[0],
+            )
+          }
+        >
+          <Text style={styles.actionLabel}>Edit locations</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
       </View>
 
       {/* App */}
       <Text style={styles.sectionLabel}>App</Text>
       <View style={styles.card}>
-        <TouchableOpacity style={[styles.row, styles.rowBorder]} onPress={comingSoon}>
-          <View style={styles.rowInner}>
-            <Text style={styles.rowLabel}>Notification settings</Text>
-            <Text style={styles.chevron}>›</Text>
-          </View>
+        <TouchableOpacity style={[styles.actionRow, styles.rowBottomBorder]} onPress={comingSoon}>
+          <Text style={styles.actionLabel}>Notification settings</Text>
+          <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.row} onPress={comingSoon}>
-          <View style={styles.rowInner}>
-            <Text style={styles.rowLabel}>Rate TupperAware</Text>
-            <Text style={styles.chevron}>›</Text>
-          </View>
+        <TouchableOpacity style={styles.actionRow} onPress={comingSoon}>
+          <Text style={styles.actionLabel}>Rate TupperAware</Text>
+          <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
       </View>
 
       {/* Danger zone */}
       <Text style={[styles.sectionLabel, styles.dangerLabel]}>Danger zone</Text>
       <View style={styles.card}>
-        <TouchableOpacity style={styles.row} onPress={handleSignOut}>
+        <TouchableOpacity style={styles.actionRow} onPress={handleSignOut}>
           <Text style={styles.signOutText}>Sign out</Text>
         </TouchableOpacity>
       </View>
@@ -194,30 +233,62 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
   },
-  row: {
+  householdHeader: {
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingTop: 16,
+    paddingBottom: 12,
   },
-  rowTop: {
+  householdName: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+    marginBottom: 2,
+  },
+  memberCountText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+  },
+  locationsSection: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    paddingTop: 10,
+    paddingBottom: 4,
+  },
+  locationsLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: Colors.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginHorizontal: 16,
+    marginBottom: 6,
+  },
+  locationRow: {
+    paddingHorizontal: 24,
+    paddingVertical: 6,
+  },
+  locationText: {
+    fontSize: 14,
+    color: Colors.textPrimary,
+  },
+  rowTopBorder: {
     borderTopWidth: 1,
     borderTopColor: Colors.border,
   },
-  rowBorder: {
+  rowBottomBorder: {
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  rowInner: {
+  actionRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
-  rowLabel: {
+  actionLabel: {
     fontSize: 15,
     color: Colors.textPrimary,
-  },
-  rowAction: {
-    color: Colors.blue,
-    fontWeight: "500",
   },
   chevron: {
     fontSize: 20,
@@ -225,6 +296,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   signOutText: {
+    flex: 1,
     fontSize: 15,
     fontWeight: "600",
     color: Colors.red,

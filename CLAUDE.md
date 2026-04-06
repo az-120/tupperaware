@@ -241,6 +241,17 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 - Data transformation functions
 - Hook logic where possible
 
+### Testing requirement for new features
+
+Every new feature task must include unit tests. Specifically:
+
+- Any new utility function in `lib/` must have corresponding tests
+  in `__tests__/`
+- Any new validation logic must be tested
+- Tests must be written in the same task as the feature, not after
+- After writing tests always run `npm test` and fix any failures before considering the task complete
+- CC must suggest test cases for UI logic even if they aren't formally written as unit tests
+
 ### Input validation rules
 
 - Item name: required, min 2 chars, max 100 chars, no special chars
@@ -261,96 +272,58 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 
 ## Current task
 
-Task: Add unit tests and input validation.
+Task: Fix profile household display and add household/location editing.
 
-### 1. Install testing dependencies
+### 1. Fix `app/(tabs)/profile.tsx` household section display
 
-Run these before writing any code:
+Current issue: household name and locations appear as flat equal rows.
+Fix the visual hierarchy to clearly separate them:
 
-```bash
-npm install --save-dev jest @testing-library/react-native
-  @testing-library/jest-native babel-jest @types/jest
-  jest-expo
-```
+- Household name displayed as a large title at the top of the section
+- Below it a muted subtitle showing member count e.g. "1 member"
+- A "Locations" sub-header below that
+- Each location shown as a row with icon + name, indented slightly
+- At the bottom of the section two tappable action rows:
+  - "Edit household name ›" — navigates to /household/edit-name
+  - "Edit locations ›" — navigates to /household/edit-locations
+- Section should feel like: household name is the parent, locations are children underneath it
 
-Add to package.json:
+### 2. Screen: `app/household/edit-name.tsx`
 
-```json
-"jest": {
-  "preset": "jest-expo",
-  "setupFilesAfterFramework": [
-    "@testing-library/jest-native/extend-expect"
-  ],
-  "transformIgnorePatterns": [
-    "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|
-    expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|
-    @react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|
-    native-base|react-native-svg)"
-  ]
-}
-```
+A simple screen for editing the household name:
 
-### 2. Validation utility: `lib/validation.ts`
+- Single text input pre-populated with current household name
+- Validates using validateHouseholdName from lib/validation.ts
+- Show inline error if validation fails
+- Save button that PATCHes to /rest/v1/households?id=eq.{id} using raw fetch + session token
+- On success calls useHousehold refresh() and navigates back
+- Navigation bar title "Edit household name" with back button
 
-Create a validation utility with these exported functions:
+### 3. Screen: `app/household/edit-locations.tsx`
 
-```typescript
-validateItemName(name: string): { valid: boolean, error: string | null }
-// required, 2-100 chars, letters/numbers/spaces/hyphens only
+A screen for managing locations within the household:
 
-validateHouseholdName(name: string): { valid: boolean, error: string | null }
-// required, 2-50 chars
-
-validateEmail(email: string): { valid: boolean, error: string | null }
-// standard email format
-
-validateExpiryDate(date: Date): { valid: boolean, error: string | null }
-// must be valid date, not more than 10 years in future
-// warn but don't block if date is in the past (user may be logging
-// something already expired)
-
-validateQuantity(quantity: string): { valid: boolean, error: string | null }
-// optional, max 20 chars if provided
-```
-
-### 3. Unit tests: `__tests__/validation.test.ts`
-
-Write comprehensive tests for every function in lib/validation.ts:
-
-- Happy path (valid inputs)
-- Empty/null inputs
-- Too short / too long
-- Invalid formats
-- Edge cases (exactly at min/max length)
-- At least 5 test cases per function
-
-### 4. Unit tests: `__tests__/openFoodFacts.test.ts`
-
-Write tests for lib/openFoodFacts.ts:
-
-- Mock fetch responses for found and not found products
-- Verify correct category mapping
-- Verify null return on network error
-- Verify null return on invalid barcode
-
-### 5. Add validation to screens
-
-Update these screens to use lib/validation.ts:
-
-- `app/item/add.tsx` — validate name on blur and on submit,
-  validate expiry date on submit
-- `app/item/edit.tsx` — same validation as add
-- `app/auth/create-account.tsx` — validate email and password
-  (min 6 chars) on blur and submit
-- `app/auth/create-household.tsx` — validate household name
-  on blur and submit
-  Show inline error text below each field using Colors.red.
+- Lists all current locations with icon and name
+- Each location row has:
+  - Icon (non-editable emoji)
+  - Editable text input for the location name
+  - A delete button (red trash icon "🗑") on the right
+  - Deleting shows a confirmation alert before proceeding
+  - DELETE request to /rest/v1/locations?id=eq.{id}
+    using raw fetch + session token
+- Below the list an "+ Add location" button that appends a new empty text input row with a default 📦 icon
+- A "Save changes" button at the bottom that:
+  - PATCHes all modified existing location names
+  - POSTs any new locations added
+  - Validates each location name is non-empty before saving
+  - On success calls useHousehold refresh() and navigates back
+- Navigation bar title "Edit locations" with back button
 
 ### Notes
 
-- Pure utility functions are the priority for testing — no need
-  to test UI rendering
-- Mock fetch using jest.fn() for openFoodFacts tests
-- After all files are written run `npm test` and fix any failing tests
-- Then run `npx tsc --noEmit` and fix type errors
+- Create the app/household/ directory
+- Use raw fetch with session token for all Supabase calls
+- Use validateHouseholdName from lib/validation.ts for household name
+- Use StyleSheet.create for all styles
+- After all files written run `npx tsc --noEmit` and fix any errors
 - Suggest a git commit message when done
