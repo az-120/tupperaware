@@ -1,4 +1,4 @@
-import { getExpiryDays, getSuggestedExpiryDate } from "../lib/expiryDefaults";
+import { getExpiryDays, getSuggestedExpiryDate, normalizeDate } from "../lib/expiryDefaults";
 
 // ── getExpiryDays ─────────────────────────────────────────────────────────────
 
@@ -84,5 +84,52 @@ describe("getSuggestedExpiryDate", () => {
     const milkDate = getSuggestedExpiryDate("milk", "Dairy");   // 7 days
     const pastaDate = getSuggestedExpiryDate("pasta", "Pantry"); // 365 days
     expect(pastaDate.getTime()).toBeGreaterThan(milkDate.getTime());
+  });
+
+  it("normalizes suggested date to noon (hours === 12)", () => {
+    const result = getSuggestedExpiryDate("milk", "Dairy");
+    expect(result.getHours()).toBe(12);
+  });
+
+  it("returns correct days for eggs (21)", () => {
+    const now = new Date();
+    const result = getSuggestedExpiryDate("eggs", "Dairy");
+    const diffDays = Math.round((result.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    expect(diffDays).toBe(21);
+  });
+
+  it("falls back to category default for unknown item name", () => {
+    const now = new Date();
+    const result = getSuggestedExpiryDate("mystery food xyz", "Meat"); // Meat default = 3
+    const diffDays = Math.round((result.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    expect(diffDays).toBe(3);
+  });
+});
+
+// ── normalizeDate ─────────────────────────────────────────────────────────────
+
+describe("normalizeDate", () => {
+  it("sets hours to 12 when given a Date object", () => {
+    const input = new Date(2026, 3, 10, 8, 30, 0); // April 10 at 08:30
+    const result = normalizeDate(input);
+    expect(result.getHours()).toBe(12);
+    expect(result.getDate()).toBe(10);
+    expect(result.getMonth()).toBe(3);
+    expect(result.getFullYear()).toBe(2026);
+  });
+
+  it("does not change the calendar date when given a Date already at noon", () => {
+    const input = new Date(2026, 3, 10, 12, 0, 0);
+    const result = normalizeDate(input);
+    expect(result.getHours()).toBe(12);
+    expect(result.getDate()).toBe(10);
+  });
+
+  it("parses YYYY-MM-DD string and sets hours to 12", () => {
+    const result = normalizeDate("2026-04-10");
+    expect(result.getHours()).toBe(12);
+    expect(result.getDate()).toBe(10);
+    expect(result.getMonth()).toBe(3); // April = month 3
+    expect(result.getFullYear()).toBe(2026);
   });
 });
