@@ -9,18 +9,27 @@ import {
 import { useState } from "react";
 import { Link } from "expo-router";
 import { supabase } from "../../lib/supabase";
+import { validateEmail, validatePassword } from "../../lib/validation";
 import { Colors } from "../../constants/colors";
 
 export default function CreateAccountScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleCreateAccount = async () => {
+    const emailResult = validateEmail(email);
+    const passwordResult = validatePassword(password);
+    setEmailError(emailResult.error);
+    setPasswordError(passwordResult.error);
+    if (!emailResult.valid || !passwordResult.valid) return;
+
     setError(null);
     setLoading(true);
-    const { error: authError } = await supabase.auth.signUp({ email, password });
+    const { error: authError } = await supabase.auth.signUp({ email: email.trim(), password });
     setLoading(false);
     if (authError) setError(authError.message);
   };
@@ -34,22 +43,26 @@ export default function CreateAccountScreen() {
       <Text style={styles.subtitle}>Create your account</Text>
 
       <TextInput
-        style={styles.input}
+        style={[styles.input, emailError ? styles.inputError : null]}
         placeholder="Email"
         placeholderTextColor={Colors.textSecondary}
         value={email}
-        onChangeText={setEmail}
+        onChangeText={(t) => { setEmail(t); setEmailError(null); }}
+        onBlur={() => setEmailError(validateEmail(email).error)}
         autoCapitalize="none"
         keyboardType="email-address"
       />
+      {emailError && <Text style={styles.error}>{emailError}</Text>}
       <TextInput
-        style={styles.input}
+        style={[styles.input, passwordError ? styles.inputError : null]}
         placeholder="Password"
         placeholderTextColor={Colors.textSecondary}
         value={password}
-        onChangeText={setPassword}
+        onChangeText={(t) => { setPassword(t); setPasswordError(null); }}
+        onBlur={() => setPasswordError(validatePassword(password).error)}
         secureTextEntry
       />
+      {passwordError && <Text style={styles.error}>{passwordError}</Text>}
 
       {error && <Text style={styles.error}>{error}</Text>}
 
@@ -90,7 +103,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.textPrimary,
     backgroundColor: "#fff",
-    marginBottom: 12,
+    marginBottom: 4,
+  },
+  inputError: {
+    borderColor: Colors.red,
   },
   error: {
     color: Colors.red,

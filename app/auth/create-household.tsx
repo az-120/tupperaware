@@ -13,6 +13,7 @@ import {useRouter} from "expo-router";
 import {supabase} from "../../lib/supabase";
 import {useAuth} from "../../hooks/useAuth";
 import {useHousehold} from "../../hooks/useHousehold";
+import {validateHouseholdName} from "../../lib/validation";
 import {Colors} from "../../constants/colors";
 
 const DEFAULT_LOCATIONS: {name: string; icon: string}[] = [
@@ -31,6 +32,7 @@ export function CreateHouseholdScreen() {
     new Set(DEFAULT_LOCATIONS.map((l) => l.name)),
   );
   const [customLocations, setCustomLocations] = useState<string[]>([]);
+  const [nameError, setNameError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,10 +57,9 @@ export function CreateHouseholdScreen() {
   };
 
   const handleCreate = async () => {
-    if (!householdName.trim()) {
-      setError("Please enter a household name.");
-      return;
-    }
+    const nameResult = validateHouseholdName(householdName);
+    setNameError(nameResult.error);
+    if (!nameResult.valid) return;
     if (!user) {
       setError("Not authenticated.");
       return;
@@ -171,12 +172,14 @@ export function CreateHouseholdScreen() {
 
         <Text style={styles.label}>Household name</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, nameError ? styles.inputError : null]}
           placeholder="e.g. The Smiths"
           placeholderTextColor={Colors.textSecondary}
           value={householdName}
-          onChangeText={setHouseholdName}
+          onChangeText={(t) => { setHouseholdName(t); setNameError(null); }}
+          onBlur={() => setNameError(validateHouseholdName(householdName).error)}
         />
+        {nameError && <Text style={styles.error}>{nameError}</Text>}
 
         <Text style={styles.label}>Default locations</Text>
         <View style={styles.pillRow}>
@@ -274,7 +277,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.textPrimary,
     backgroundColor: "#fff",
-    marginBottom: 16,
+    marginBottom: 4,
+  },
+  inputError: {
+    borderColor: Colors.red,
   },
   customInput: {
     marginTop: 8,

@@ -225,151 +225,132 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 
 ---
 
+## Testing & validation standards
+
+### Testing framework
+
+- Jest + React Native Testing Library
+- Test files live in `__tests__/` folder at root level
+- Test file naming: `[filename].test.ts` or `[filename].test.tsx`
+- Run tests with: `npm test`
+
+### What to test
+
+- All utility functions in `lib/` — pure functions are highest priority
+- Input validation logic
+- Data transformation functions
+- Hook logic where possible
+
+### Input validation rules
+
+- Item name: required, min 2 chars, max 100 chars, no special chars
+- Household name: required, min 2 chars, max 50 chars
+- Email: standard email format validation
+- Expiry date: must be a valid date, not more than 10 years in future
+- Quantity: optional, max 20 chars
+- All validation errors must show inline below the relevant input field
+- Validate on submit AND on blur (when user leaves a field)
+
+### Validation utility
+
+- All validation logic lives in `lib/validation.ts`
+- Exported as pure functions so they are easily testable
+- Each function returns `{ valid: boolean, error: string | null }`
+
+---
+
 ## Current task
 
-Task 3 of 3: Add predetermined expiration date suggestions based on
-item name and category.
+Task: Add unit tests and input validation.
 
-### Goal
+### 1. Install testing dependencies
 
-When a user is adding or editing an item, the expiry date picker
-should auto-suggest a sensible default based on the item name and
-category. The user can always override it manually.
+Run these before writing any code:
 
-### 1. Update `lib/expiryDefaults.ts`
-
-Add the following to the existing file:
-
-A common foods dictionary:
-
-```typescript
-const FOOD_EXPIRY_DAYS: Record<string, number> = {
-  // Dairy
-  milk: 7,
-  "whole milk": 7,
-  "skim milk": 7,
-  "oat milk": 7,
-  "almond milk": 7,
-  eggs: 21,
-  egg: 21,
-  butter: 30,
-  "cream cheese": 14,
-  "cottage cheese": 7,
-  "sour cream": 14,
-  "heavy cream": 14,
-  yogurt: 14,
-  "greek yogurt": 14,
-  cheddar: 30,
-  cheese: 21,
-  mozzarella: 14,
-  parmesan: 60,
-  // Produce
-  spinach: 5,
-  lettuce: 5,
-  kale: 7,
-  arugula: 4,
-  broccoli: 5,
-  cauliflower: 7,
-  carrots: 21,
-  celery: 14,
-  cucumber: 7,
-  zucchini: 7,
-  "bell pepper": 7,
-  tomato: 5,
-  strawberries: 4,
-  blueberries: 7,
-  raspberries: 3,
-  grapes: 7,
-  apple: 30,
-  banana: 5,
-  avocado: 4,
-  lemon: 21,
-  lime: 21,
-  orange: 14,
-  // Meat
-  chicken: 3,
-  "chicken breast": 3,
-  "ground beef": 2,
-  beef: 3,
-  pork: 3,
-  bacon: 7,
-  salmon: 2,
-  fish: 2,
-  shrimp: 2,
-  turkey: 3,
-  ham: 5,
-  sausage: 3,
-  // Frozen
-  "frozen chicken": 90,
-  "frozen beef": 90,
-  "frozen fish": 90,
-  "ice cream": 60,
-  "frozen pizza": 60,
-  "frozen vegetables": 180,
-  // Pantry
-  bread: 7,
-  sourdough: 5,
-  bagel: 5,
-  tortilla: 14,
-  pasta: 365,
-  rice: 365,
-  oats: 365,
-  cereal: 180,
-  "peanut butter": 180,
-  jam: 180,
-  honey: 730,
-  "olive oil": 365,
-  mayo: 60,
-  ketchup: 180,
-  mustard: 180,
-  "hot sauce": 365,
-  "soy sauce": 365,
-  juice: 7,
-  "orange juice": 7,
-};
+```bash
+npm install --save-dev jest @testing-library/react-native
+  @testing-library/jest-native babel-jest @types/jest
+  jest-expo
 ```
 
-Export these functions:
+Add to package.json:
 
-```typescript
-export function getExpiryDays(name: string, category: string): number;
-// 1. Lowercase name, check exact match in FOOD_EXPIRY_DAYS
-// 2. If no exact match, check if any key is contained in name
-// 3. Fall back to category defaults:
-//    Dairy→7, Produce→5, Meat→3, Frozen→90, Pantry→180, Other→7
-
-export function getSuggestedExpiryDate(name: string, category: string): Date;
-// Calls getExpiryDays(), adds that many days to today,
-// applies normalizeDate() before returning
+```json
+"jest": {
+  "preset": "jest-expo",
+  "setupFilesAfterFramework": [
+    "@testing-library/jest-native/extend-expect"
+  ],
+  "transformIgnorePatterns": [
+    "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|
+    expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|
+    @react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|
+    native-base|react-native-svg)"
+  ]
+}
 ```
 
-### 2. Update `app/item/add.tsx`
+### 2. Validation utility: `lib/validation.ts`
 
-- Import getExpiryDays and getSuggestedExpiryDate
-- Add a boolean state variable `dateManuallyEdited` initialized to false
-- When category changes: if !dateManuallyEdited, call
-  getSuggestedExpiryDate() and update the date picker
-- When item name changes, use a 500ms debounce: if !dateManuallyEdited,
-  call getSuggestedExpiryDate() and update the date picker
-- When barcode scan auto-populates name and category: set
-  dateManuallyEdited to false and call getSuggestedExpiryDate()
-- When user manually changes the date picker: set dateManuallyEdited
-  to true
-- Show muted hint text below date picker when !dateManuallyEdited:
-  "Suggested based on item type — tap to adjust"
-  Hide hint when dateManuallyEdited is true
+Create a validation utility with these exported functions:
 
-### 3. Update `app/item/edit.tsx`
+```typescript
+validateItemName(name: string): { valid: boolean, error: string | null }
+// required, 2-100 chars, letters/numbers/spaces/hyphens only
 
-- Import getSuggestedExpiryDate
-- Add a "Reset to suggested date" text button below the date picker
-- Tapping it calls getSuggestedExpiryDate() with current name and
-  category and resets the date picker
+validateHouseholdName(name: string): { valid: boolean, error: string | null }
+// required, 2-50 chars
+
+validateEmail(email: string): { valid: boolean, error: string | null }
+// standard email format
+
+validateExpiryDate(date: Date): { valid: boolean, error: string | null }
+// must be valid date, not more than 10 years in future
+// warn but don't block if date is in the past (user may be logging
+// something already expired)
+
+validateQuantity(quantity: string): { valid: boolean, error: string | null }
+// optional, max 20 chars if provided
+```
+
+### 3. Unit tests: `__tests__/validation.test.ts`
+
+Write comprehensive tests for every function in lib/validation.ts:
+
+- Happy path (valid inputs)
+- Empty/null inputs
+- Too short / too long
+- Invalid formats
+- Edge cases (exactly at min/max length)
+- At least 5 test cases per function
+
+### 4. Unit tests: `__tests__/openFoodFacts.test.ts`
+
+Write tests for lib/openFoodFacts.ts:
+
+- Mock fetch responses for found and not found products
+- Verify correct category mapping
+- Verify null return on network error
+- Verify null return on invalid barcode
+
+### 5. Add validation to screens
+
+Update these screens to use lib/validation.ts:
+
+- `app/item/add.tsx` — validate name on blur and on submit,
+  validate expiry date on submit
+- `app/item/edit.tsx` — same validation as add
+- `app/auth/create-account.tsx` — validate email and password
+  (min 6 chars) on blur and submit
+- `app/auth/create-household.tsx` — validate household name
+  on blur and submit
+  Show inline error text below each field using Colors.red.
 
 ### Notes
 
-- normalizeDate is already in lib/expiryDefaults.ts from Task 2 —
-  use it inside getSuggestedExpiryDate
-- Do not change any picker UI from Task 1
-- After all files written run `npx tsc --noEmit` and fix any errors
+- Pure utility functions are the priority for testing — no need
+  to test UI rendering
+- Mock fetch using jest.fn() for openFoodFacts tests
+- After all files are written run `npm test` and fix any failing tests
+- Then run `npx tsc --noEmit` and fix type errors
 - Suggest a git commit message when done

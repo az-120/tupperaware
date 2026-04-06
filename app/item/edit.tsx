@@ -13,6 +13,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useHousehold } from "../../hooks/useHousehold";
 import { scheduleExpiryNotification } from "../../lib/notifications";
+import { validateItemName } from "../../lib/validation";
 import { getSuggestedExpiryDate, normalizeDate } from "../../lib/expiryDefaults";
 import { supabase } from "../../lib/supabase";
 import { Colors } from "../../constants/colors";
@@ -34,6 +35,7 @@ export default function EditItemScreen() {
   const [locationId, setLocationId] = useState("");
   const [expiryDate, setExpiryDate] = useState<Date>(new Date());
 
+  const [nameError, setNameError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,10 +78,9 @@ export default function EditItemScreen() {
   }, [id]);
 
   const handleSave = async () => {
-    if (!name.trim()) {
-      setError("Item name is required.");
-      return;
-    }
+    const nameResult = validateItemName(name);
+    setNameError(nameResult.error);
+    if (!nameResult.valid) return;
     if (!locationId) {
       setError("Please select a location.");
       return;
@@ -157,12 +158,14 @@ export default function EditItemScreen() {
       >
         <Text style={styles.label}>Item name *</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, nameError ? styles.inputError : null]}
           placeholder="e.g. Whole Milk"
           placeholderTextColor={Colors.textSecondary}
           value={name}
-          onChangeText={setName}
+          onChangeText={(t) => { setName(t); setNameError(null); }}
+          onBlur={() => setNameError(validateItemName(name).error)}
         />
+        {nameError && <Text style={styles.fieldError}>{nameError}</Text>}
 
         <Text style={styles.label}>Quantity</Text>
         <TextInput
@@ -297,6 +300,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.textPrimary,
     backgroundColor: "#fff",
+  },
+  inputError: {
+    borderColor: Colors.red,
+  },
+  fieldError: {
+    color: Colors.red,
+    fontSize: 12,
+    marginTop: 4,
   },
   pillRow: {
     flexDirection: "row",

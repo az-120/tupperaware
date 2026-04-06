@@ -17,6 +17,7 @@ import { BarcodeScanner } from "../../components/BarcodeScanner";
 import { lookupBarcode } from "../../lib/openFoodFacts";
 import { supabase } from "../../lib/supabase";
 import { scheduleExpiryNotification } from "../../lib/notifications";
+import { validateItemName, validateExpiryDate } from "../../lib/validation";
 import { getSuggestedExpiryDate, normalizeDate } from "../../lib/expiryDefaults";
 import { Colors } from "../../constants/colors";
 import { Item, ItemCategory } from "../../types";
@@ -41,6 +42,7 @@ export default function AddItemScreen() {
   const [selectedLocationId, setSelectedLocationId] = useState<string>(location_id ?? "");
   const [expiryDate, setExpiryDate] = useState<Date>(new Date());
 
+  const [nameError, setNameError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDateSuggested, setIsDateSuggested] = useState(false);
@@ -85,10 +87,11 @@ export default function AddItemScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!name.trim()) {
-      setError("Item name is required.");
-      return;
-    }
+    const nameResult = validateItemName(name);
+    const expiryResult = validateExpiryDate(expiryDate);
+    setNameError(nameResult.error);
+    if (!nameResult.valid) { setError(null); return; }
+    if (!expiryResult.valid) { setError(expiryResult.error); return; }
     if (!selectedLocationId) {
       setError("Please select a location.");
       return;
@@ -194,12 +197,14 @@ export default function AddItemScreen() {
 
           <Text style={styles.label}>Item name *</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, nameError ? styles.inputError : null]}
             placeholder="e.g. Whole Milk"
             placeholderTextColor={Colors.textSecondary}
             value={name}
-            onChangeText={setName}
+            onChangeText={(t) => { setName(t); setNameError(null); }}
+            onBlur={() => setNameError(validateItemName(name).error)}
           />
+          {nameError && <Text style={styles.fieldError}>{nameError}</Text>}
 
           <Text style={styles.label}>Quantity</Text>
           <TextInput
@@ -389,6 +394,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.textPrimary,
     backgroundColor: "#fff",
+  },
+  inputError: {
+    borderColor: Colors.red,
+  },
+  fieldError: {
+    color: Colors.red,
+    fontSize: 12,
+    marginTop: 4,
   },
   pillRow: {
     flexDirection: "row",
