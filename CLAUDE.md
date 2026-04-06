@@ -225,57 +225,132 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 
 ---
 
+## Testing & validation standards
+
+### Testing framework
+
+- Jest + React Native Testing Library
+- Test files live in `__tests__/` folder at root level
+- Test file naming: `[filename].test.ts` or `[filename].test.tsx`
+- Run tests with: `npm test`
+
+### What to test
+
+- All utility functions in `lib/` — pure functions are highest priority
+- Input validation logic
+- Data transformation functions
+- Hook logic where possible
+
+### Input validation rules
+
+- Item name: required, min 2 chars, max 100 chars, no special chars
+- Household name: required, min 2 chars, max 50 chars
+- Email: standard email format validation
+- Expiry date: must be a valid date, not more than 10 years in future
+- Quantity: optional, max 20 chars
+- All validation errors must show inline below the relevant input field
+- Validate on submit AND on blur (when user leaves a field)
+
+### Validation utility
+
+- All validation logic lives in `lib/validation.ts`
+- Exported as pure functions so they are easily testable
+- Each function returns `{ valid: boolean, error: string | null }`
+
+---
+
 ## Current task
 
-Task: Build the edit item screen.
+Task: Add unit tests and input validation.
 
-### 1. Screen: `app/item/edit.tsx`
+### 1. Install testing dependencies
 
-A screen for editing an existing item, pre-populated with current values:
+Run these before writing any code:
 
-Data:
+```bash
+npm install --save-dev jest @testing-library/react-native
+  @testing-library/jest-native babel-jest @types/jest
+  jest-expo
+```
 
-- Uses useLocalSearchParams to get item id from route
-- On mount, fetches the item from Supabase using raw fetch + session token
-- Uses useHousehold to get available locations for the location selector
+Add to package.json:
 
-Form fields (identical to add item manual form, pre-populated):
+```json
+"jest": {
+  "preset": "jest-expo",
+  "setupFilesAfterFramework": [
+    "@testing-library/jest-native/extend-expect"
+  ],
+  "transformIgnorePatterns": [
+    "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|
+    expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|
+    @react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|
+    native-base|react-native-svg)"
+  ]
+}
+```
 
-- Item name (text input, required)
-- Quantity (text input, optional)
-- Category selector (Dairy, Produce, Meat, Frozen, Pantry, Other)
-  pre-selected to current category
-- Location selector (pills showing all household locations)
-  pre-selected to current location_id
-- Expiration date (date picker) pre-set to current expiry_date
+### 2. Validation utility: `lib/validation.ts`
 
-Save button:
+Create a validation utility with these exported functions:
 
-- Validates name and expiry_date are present
-- PATCH request to /rest/v1/items?id=eq.{id} using raw fetch +
-  session token with updated fields:
-  name, quantity, category, location_id, expiry_date, updated_at
-- On success, reschedules the expiry notification for the item
-- Navigates back to item detail screen on success
-- Shows inline error if update fails
+```typescript
+validateItemName(name: string): { valid: boolean, error: string | null }
+// required, 2-100 chars, letters/numbers/spaces/hyphens only
 
-Navigation:
+validateHouseholdName(name: string): { valid: boolean, error: string | null }
+// required, 2-50 chars
 
-- Back button in nav bar
-- Title "Edit item"
-- No save button in nav bar — use a full width Save button at
-  the bottom of the form instead
+validateEmail(email: string): { valid: boolean, error: string | null }
+// standard email format
 
-### 2. Update `app/item/[id].tsx`
+validateExpiryDate(date: Date): { valid: boolean, error: string | null }
+// must be valid date, not more than 10 years in future
+// warn but don't block if date is in the past (user may be logging
+// something already expired)
 
-- Edit button in nav bar should navigate to /item/edit passing
-  the item id as a search param
+validateQuantity(quantity: string): { valid: boolean, error: string | null }
+// optional, max 20 chars if provided
+```
+
+### 3. Unit tests: `__tests__/validation.test.ts`
+
+Write comprehensive tests for every function in lib/validation.ts:
+
+- Happy path (valid inputs)
+- Empty/null inputs
+- Too short / too long
+- Invalid formats
+- Edge cases (exactly at min/max length)
+- At least 5 test cases per function
+
+### 4. Unit tests: `__tests__/openFoodFacts.test.ts`
+
+Write tests for lib/openFoodFacts.ts:
+
+- Mock fetch responses for found and not found products
+- Verify correct category mapping
+- Verify null return on network error
+- Verify null return on invalid barcode
+
+### 5. Add validation to screens
+
+Update these screens to use lib/validation.ts:
+
+- `app/item/add.tsx` — validate name on blur and on submit,
+  validate expiry date on submit
+- `app/item/edit.tsx` — same validation as add
+- `app/auth/create-account.tsx` — validate email and password
+  (min 6 chars) on blur and submit
+- `app/auth/create-household.tsx` — validate household name
+  on blur and submit
+  Show inline error text below each field using Colors.red.
 
 ### Notes
 
-- Use raw fetch with session token for all Supabase calls
-- Reuse the same form field patterns from app/item/add.tsx for
-  consistency
-- Use StyleSheet.create for all styles
-- After all files are written run `npx tsc --noEmit` and fix any errors
+- Pure utility functions are the priority for testing — no need
+  to test UI rendering
+- Mock fetch using jest.fn() for openFoodFacts tests
+- After all files are written run `npm test` and fix any failing tests
+- Then run `npx tsc --noEmit` and fix type errors
 - Suggest a git commit message when done
