@@ -13,7 +13,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useHousehold } from "../../hooks/useHousehold";
 import { scheduleExpiryNotification } from "../../lib/notifications";
-import { getSuggestedExpiryDate } from "../../lib/expiryDefaults";
+import { getSuggestedExpiryDate, normalizeDate } from "../../lib/expiryDefaults";
 import { supabase } from "../../lib/supabase";
 import { Colors } from "../../constants/colors";
 import { Item, ItemCategory } from "../../types";
@@ -70,7 +70,7 @@ export default function EditItemScreen() {
       setQuantity(item.quantity ?? "");
       setCategory(item.category);
       setLocationId(item.location_id);
-      setExpiryDate(new Date(item.expiry_date));
+      setExpiryDate(normalizeDate(item.expiry_date));
       setFetching(false);
     })();
   }, [id]);
@@ -89,7 +89,7 @@ export default function EditItemScreen() {
     setError(null);
 
     const headers = await getHeaders();
-    const expiryStr = expiryDate.toISOString().split("T")[0];
+    const expiryStr = normalizeDate(expiryDate).toISOString().split("T")[0];
 
     const res = await fetch(
       `${process.env.EXPO_PUBLIC_SUPABASE_URL}/rest/v1/items?id=eq.${id}`,

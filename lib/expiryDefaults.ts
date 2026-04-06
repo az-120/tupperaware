@@ -114,3 +114,22 @@ export function getSuggestedExpiryDate(name: string, category: string): Date {
   date.setDate(date.getDate() + days);
   return date;
 }
+
+/**
+ * Normalizes a date to local noon so that toISOString().split("T")[0] always
+ * returns the correct local calendar date regardless of the device's UTC offset.
+ * Accepts a YYYY-MM-DD string (safe parsing) or an existing Date object.
+ */
+export function normalizeDate(dateOrStr: Date | string): Date {
+  if (typeof dateOrStr === "string") {
+    // Append local noon to avoid UTC-midnight parsing (the -1 day bug)
+    return new Date(`${dateOrStr}T12:00:00`);
+  }
+  // Re-anchor an existing Date to noon of the same local calendar day
+  return new Date(
+    dateOrStr.getFullYear(),
+    dateOrStr.getMonth(),
+    dateOrStr.getDate(),
+    12, 0, 0,
+  );
+}

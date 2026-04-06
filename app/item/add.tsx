@@ -17,7 +17,7 @@ import { BarcodeScanner } from "../../components/BarcodeScanner";
 import { lookupBarcode } from "../../lib/openFoodFacts";
 import { supabase } from "../../lib/supabase";
 import { scheduleExpiryNotification } from "../../lib/notifications";
-import { getSuggestedExpiryDate } from "../../lib/expiryDefaults";
+import { getSuggestedExpiryDate, normalizeDate } from "../../lib/expiryDefaults";
 import { Colors } from "../../constants/colors";
 import { Item, ItemCategory } from "../../types";
 
@@ -102,7 +102,7 @@ export default function AddItemScreen() {
     setError(null);
 
     const session = (await supabase.auth.getSession()).data.session;
-    const expiryStr = expiryDate.toISOString().split("T")[0];
+    const expiryStr = normalizeDate(expiryDate).toISOString().split("T")[0];
 
     const res = await fetch(
       `${process.env.EXPO_PUBLIC_SUPABASE_URL}/rest/v1/items`,
