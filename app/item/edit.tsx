@@ -208,11 +208,10 @@ export default function EditItemScreen() {
           <DateTimePicker
             value={expiryDate}
             mode="date"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
+            display={Platform.OS === "ios" ? "inline" : "default"}
             onChange={(_event: DateTimePickerEvent, date?: Date) => {
               if (date) setExpiryDate(date);
             }}
-            style={styles.datePickerWidget}
           />
         </View>
         <TouchableOpacity
@@ -330,9 +329,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     overflow: "hidden",
-  },
-  datePickerWidget: {
-    height: 120,
   },
   error: {
     color: Colors.red,

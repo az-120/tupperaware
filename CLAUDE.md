@@ -227,143 +227,33 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=
 
 ## Current task
 
-Task: Add predetermined expiration date defaults based on item name
-and category.
+Task 1 of 3: Standardize expiration date picker to calendar view on
+both add and edit screens.
 
-### 1. Utility: `lib/expiryDefaults.ts`
+### Goal
 
-Create a new utility file with:
+Make the date picker consistent across app/item/add.tsx and
+app/item/edit.tsx — both should use the calendar view style.
 
-A common foods dictionary mapping lowercase keywords to days until expiry:
+### Changes needed
 
-```typescript
-const FOOD_EXPIRY_DAYS: Record<string, number> = {
-  // Dairy
-  milk: 7,
-  "whole milk": 7,
-  "skim milk": 7,
-  "oat milk": 7,
-  "almond milk": 7,
-  eggs: 21,
-  egg: 21,
-  butter: 30,
-  "cream cheese": 14,
-  "cottage cheese": 7,
-  "sour cream": 14,
-  "heavy cream": 14,
-  yogurt: 14,
-  "greek yogurt": 14,
-  cheddar: 30,
-  cheese: 21,
-  mozzarella: 14,
-  parmesan: 60,
-  // Produce
-  spinach: 5,
-  lettuce: 5,
-  kale: 7,
-  arugula: 4,
-  broccoli: 5,
-  cauliflower: 7,
-  carrots: 21,
-  celery: 14,
-  cucumber: 7,
-  zucchini: 7,
-  "bell pepper": 7,
-  tomato: 5,
-  strawberries: 4,
-  blueberries: 7,
-  raspberries: 3,
-  grapes: 7,
-  apple: 30,
-  banana: 5,
-  avocado: 4,
-  lemon: 21,
-  lime: 21,
-  orange: 14,
-  // Meat
-  chicken: 3,
-  "chicken breast": 3,
-  "ground beef": 2,
-  beef: 3,
-  pork: 3,
-  bacon: 7,
-  salmon: 2,
-  fish: 2,
-  shrimp: 2,
-  turkey: 3,
-  ham: 5,
-  sausage: 3,
-  // Frozen
-  "frozen chicken": 90,
-  "frozen beef": 90,
-  "frozen fish": 90,
-  "ice cream": 60,
-  "frozen pizza": 60,
-  "frozen vegetables": 180,
-  // Pantry
-  bread: 7,
-  sourdough: 5,
-  bagel: 5,
-  tortilla: 14,
-  pasta: 365,
-  rice: 365,
-  oats: 365,
-  cereal: 180,
-  "peanut butter": 180,
-  jam: 180,
-  honey: 730,
-  "olive oil": 365,
-  mayo: 60,
-  ketchup: 180,
-  mustard: 180,
-  "hot sauce": 365,
-  "soy sauce": 365,
-  juice: 7,
-  "orange juice": 7,
-};
-```
+`app/item/add.tsx`:
 
-Export a function `getExpiryDays(name: string, category: string): number`
-that:
+- Find the date picker component (likely DateTimePicker from
+  @react-native-community/datetimepicker)
+- Set display prop to 'calendar' on iOS
+- Ensure it shows inline in the form (not as a modal)
+- Style the container to match the rest of the form
 
-- Lowercases the name and checks for an exact match in the dictionary
-- If no exact match, checks if any dictionary key is contained within
-  the item name (e.g. "Large Eggs" contains "eggs" → 21 days)
-- If still no match, falls back to category defaults:
-  - Dairy → 7, Produce → 5, Meat → 3, Frozen → 90,
-    Pantry → 180, Other → 7
-- Returns the number of days as a number
+`app/item/edit.tsx`:
 
-Export a helper `getSuggestedExpiryDate(name: string, category: string): Date`
-that:
-
-- Calls getExpiryDays()
-- Returns new Date() plus that many days
-
-### 2. Update `app/item/add.tsx`
-
-- Import getExpiryDays and getSuggestedExpiryDate from lib/expiryDefaults.ts
-- When category changes, if expiry date has not been manually edited
-  by the user, call getSuggestedExpiryDate() and update the date picker
-- When item name changes (after user stops typing — use a 500ms debounce),
-  call getSuggestedExpiryDate() and update the date picker if not manually
-  edited
-- When a barcode scan auto-populates the name and category, immediately
-  call getSuggestedExpiryDate() and set the date picker
-- Add a small muted hint text below the date picker:
-  "Suggested based on item type — tap to adjust"
-  Only show this hint when the date was auto-suggested, hide it if
-  the user manually changes the date
-
-### 3. Update `app/item/edit.tsx`
-
-- Import getSuggestedExpiryDate from lib/expiryDefaults.ts
-- Add a "Reset to suggested date" text button below the date picker
-  that calls getSuggestedExpiryDate() with the current name and
-  category and resets the date picker to that value
+- Apply the exact same calendar display changes as add.tsx
+- Ensure the pre-populated date renders correctly in calendar view
 
 ### Notes
 
-- Use StyleSheet.create for all styles
-- After all files are written run `npx tsc --noEmit` and fix any errors
+- Do not change any other logic — this task is UI consistency only
+- Do not touch expiry defaults or date normalization yet
+- After changes run `npx tsc --noEmit` and fix any errors
+- Press r to reload and visually confirm both screens show calendar view
 - Suggest a git commit message when done
