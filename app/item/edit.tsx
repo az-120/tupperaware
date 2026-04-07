@@ -39,6 +39,7 @@ export default function EditItemScreen() {
 
   const [fetching, setFetching] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [fetchedItem, setFetchedItem] = useState<Item | null>(null);
 
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -81,6 +82,7 @@ export default function EditItemScreen() {
         setFetching(false);
         return;
       }
+      setFetchedItem(item);
       setName(item.name);
       setQuantity(item.quantity ?? "");
       setCategory(item.category);
@@ -182,6 +184,11 @@ export default function EditItemScreen() {
           onBlur={() => setNameError(validateItemName(name).error)}
         />
         {nameError && <Text style={styles.fieldError}>{nameError}</Text>}
+        {fetchedItem?.partially_used && (
+          <View style={styles.partialBadge}>
+            <Text style={styles.partialBadgeText}>Partially used</Text>
+          </View>
+        )}
 
         <Text style={styles.label}>Icon</Text>
         <View style={styles.emojiPickerRow}>
@@ -385,6 +392,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     overflow: "hidden",
+  },
+  partialBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: Colors.amberBg,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginTop: 6,
+  },
+  partialBadgeText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: Colors.amber,
   },
   emojiPickerRow: {
     flexDirection: "row",

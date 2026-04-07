@@ -32,7 +32,14 @@ export function ItemRow({ item, locationName }: ItemRowProps) {
         <Text style={styles.iconChar}>{displayEmoji}</Text>
       </View>
       <View style={styles.info}>
-        <Text style={styles.name}>{item.name}</Text>
+        <View style={styles.nameRow}>
+          <Text style={styles.name}>{item.name}</Text>
+          {item.partially_used && (
+            <View style={styles.partialBadge}>
+              <Text style={styles.partialBadgeText}>partial</Text>
+            </View>
+          )}
+        </View>
         <Text style={styles.meta}>
           {item.category}
           {item.quantity ? `  ·  ${item.quantity}` : ""}
@@ -70,11 +77,27 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 12,
   },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 2,
+  },
   name: {
     fontSize: 15,
     fontWeight: "600",
     color: Colors.textPrimary,
-    marginBottom: 2,
+  },
+  partialBadge: {
+    backgroundColor: Colors.amberBg,
+    borderRadius: 10,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  partialBadgeText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: Colors.amber,
   },
   meta: {
     fontSize: 13,

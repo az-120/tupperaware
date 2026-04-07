@@ -272,58 +272,79 @@ Every new feature task must include unit tests. Specifically:
 
 ## Current task
 
-Task: Add custom emoji support per item and display it in location view.
+Task: Add partial use prompt when marking item as used. Assume supabase sql edits were made properly.
 
-### 1. Database migration
+### 1. Update `types/index.ts`
 
-Run this in Supabase SQL editor to add the emoji column:
+Add to Item type:
 
-```sql
-alter table items add column if not exists emoji text;
+- `partially_used?: boolean`
+- `use_notes?: string`
+
+### 2. Update `app/item/[id].tsx`
+
+Replace the current "Mark as used" button behavior with a two-step
+flow:
+
+When user taps "Mark as used":
+
+- Show an inline confirmation section that slides in below the
+  button (do not use a modal or Alert — render inline):
+
+```text
+Did you use all of it?
+[✓ Fully used]  [~ Partially used]
+[Cancel]
 ```
 
-### 2. Update `types/index.ts`
+If "Fully used" is tapped:
 
-Add `emoji?: string` field to the Item type.
+- PATCH item: status = 'used', partially_used = false
+- Navigate back on success
 
-### 3. Update `app/item/add.tsx`
+If "Partially used" is tapped:
 
-- Add an emoji picker row to the manual form between item name
-  and quantity:
-  - Label "Icon"
-  - A row of 8-10 common food emoji options as tappable pills:
-    🥛 🥚 🧀 🥩 🥦 🍎 🍞 🥫 ❄️ 📦
-  - Currently selected emoji shown larger in the center with a
-    light blue background
-  - A text input next to the preset options labeled "or type one"
-    that accepts a single emoji character
-  - Defaults to the category emoji from the existing CATEGORY_EMOJI
-    map if no custom emoji is set
-  - Include emoji field in the Supabase insert payload
+- Show a follow-up text input inline:
+
+```text
+How much is left? (optional)
+[___________________]
+[Confirm partial use]
+```
+
+- PATCH item: status = 'active', partially_used = true,
+  use_notes = input value
+- This keeps the item active in the inventory but flags it
+  as partially consumed
+- Navigate back on success
 
 ### 4. Update `app/item/edit.tsx`
 
-- Add the same emoji picker row as add.tsx
-- Pre-populate with the item's current emoji on mount
-- Include emoji field in the PATCH payload
+- If item.partially_used is true show a muted badge below
+  the item name: "Partially used"
+- This gives visual feedback that the item has been partially
+  consumed
 
 ### 5. Update `components/ItemRow.tsx`
 
-- Replace the category emoji icon box on the left with the
-  item's own emoji field
-- Fall back to category emoji if item.emoji is null or empty
-- Keep the same icon box styling (rounded square background)
+- If item.partially_used is true show a small "partial" badge
+  next to the item name in the list
+- Use amber color: background Colors.amberBg, text Colors.amber
+- Badge text: "partial"
 
-### 6. Update `components/LocationCard.tsx`
+### Unit tests: `__tests__/itemActions.test.ts`
 
-- Item chips on the home screen location cards should also
-  show the item emoji before the item name
-- e.g. "🥛 Whole Milk — 2d" instead of "Whole Milk — 2d"
+- Test that marking fully used sends correct PATCH payload
+  (status='used', partially_used=false)
+- Test that marking partially used sends correct PATCH payload
+  (status='active', partially_used=true)
+- Test that use_notes is included in partial use payload
+- Test that cancel hides the confirmation section
 
 ### Notes
 
-- The CATEGORY_EMOJI map likely already exists in add.tsx or
-  types — reuse it, don't duplicate
+- Use raw fetch with session token for all PATCH calls
 - Use StyleSheet.create for all styles
-- After all files written run `npx tsc --noEmit` and fix any errors
+- After all files written run `npm test` and `npx tsc --noEmit`
+  and fix all errors
 - Suggest a git commit message when done
