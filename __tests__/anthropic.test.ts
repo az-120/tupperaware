@@ -1,4 +1,4 @@
-import { fetchRecipeSuggestions, Recipe } from "../lib/anthropic";
+import { fetchRecipeSuggestions, fetchRecipesForSelectedItems, Recipe } from "../lib/anthropic";
 import { Item } from "../types";
 
 const mockFetch = global.fetch as jest.Mock;
@@ -137,4 +137,81 @@ it("throws when response content is empty", async () => {
   });
 
   await expect(fetchRecipeSuggestions([], [], [])).rejects.toThrow("Empty response from Anthropic API");
+});
+
+// ── fetchRecipesForSelectedItems ────────────────────────────────────────────
+
+describe("fetchRecipesForSelectedItems", () => {
+  it("returns parsed Recipe array on success", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        content: [{ type: "text", text: JSON.stringify(sampleRecipes) }],
+      }),
+    });
+
+    const result = await fetchRecipesForSelectedItems([
+      makeItem("chicken", "2026-04-08"),
+      makeItem("rice", "2026-04-15"),
+    ]);
+
+    expect(result).toEqual(sampleRecipes);
+  });
+
+  it("includes selected item names in prompt", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        content: [{ type: "text", text: JSON.stringify(sampleRecipes) }],
+      }),
+    });
+
+    await fetchRecipesForSelectedItems([
+      makeItem("chicken", "2026-04-08"),
+      makeItem("broccoli", "2026-04-10"),
+    ]);
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body as string);
+    const prompt = body.messages[0].content as string;
+    expect(prompt).toContain("chicken");
+    expect(prompt).toContain("broccoli");
+    expect(prompt).toContain("expires in");
+  });
+
+  it("throws on API error", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      text: async () => "Server error",
+    });
+
+    await expect(
+      fetchRecipesForSelectedItems([makeItem("chicken", "2026-04-08")]),
+    ).rejects.toThrow("Anthropic API error (500)");
+  });
+
+  it("sends correct model and headers", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        content: [{ type: "text", text: "[]" }],
+      }),
+    });
+
+    await fetchRecipesForSelectedItems([makeItem("eggs", "2026-04-09")]);
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://api.anthropic.com/v1/messages",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          "x-api-key": "test-api-key",
+          "anthropic-version": "2023-06-01",
+        }),
+      }),
+    );
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body as string);
+    expect(body.model).toBe("claude-sonnet-4-20250514");
+  });
 });

@@ -10,7 +10,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHousehold } from "../../hooks/useHousehold";
 import { supabase } from "../../lib/supabase";
 import { getExpiryStatus } from "../../lib/expiry";
-import { fetchRecipeSuggestions, Recipe } from "../../lib/anthropic";
+import { fetchRecipeSuggestions, fetchRecipesForSelectedItems, Recipe } from "../../lib/anthropic";
+import { SelectableItemRow } from "../../components/SelectableItemRow";
 import { Colors } from "../../constants/colors";
 import { Item } from "../../types";
 
@@ -33,10 +34,18 @@ export default function RecipesScreen() {
   const [itemsLoading, setItemsLoading] = useState(false);
   const [mode, setMode] = useState<Mode>("smart");
 
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [generating, setGenerating] = useState(false);
-  const [genError, setGenError] = useState<string | null>(null);
-  const cachedFingerprintRef = useRef<string>("");
+  // Smart mode state
+  const [smartRecipes, setSmartRecipes] = useState<Recipe[]>([]);
+  const [smartGenerating, setSmartGenerating] = useState(false);
+  const [smartError, setSmartError] = useState<string | null>(null);
+  const smartFingerprintRef = useRef<string>("");
+
+  // Pick mode state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [pickRecipes, setPickRecipes] = useState<Recipe[]>([]);
+  const [pickGenerating, setPickGenerating] = useState(false);
+  const [pickError, setPickError] = useState<string | null>(null);
+  const pickFingerprintRef = useRef<string>("");
 
   const fetchAllItems = useCallback(async () => {
     if (!household) return;
@@ -84,29 +93,77 @@ export default function RecipesScreen() {
     return { urgent: u, soon: s, fresh: f };
   }, [allItems]);
 
-  const itemsFingerprint = useMemo(
+  // Items split for pick mode: expiring (≤5 days) vs rest (6+)
+  const { expiringSoonItems, restItems } = useMemo(() => {
+    const exp: Item[] = [];
+    const rest: Item[] = [];
+    for (const item of allItems) {
+      const status = getExpiryStatus(item.expiry_date);
+      if (status === "expired" || status === "critical" || status === "warning") {
+        exp.push(item);
+      } else {
+        rest.push(item);
+      }
+    }
+    return { expiringSoonItems: exp, restItems: rest };
+  }, [allItems]);
+
+  const smartFingerprint = useMemo(
     () => allItems.map((i) => i.id).sort().join(","),
     [allItems],
   );
 
   const expiringSoonCount = urgent.length + soon.length;
+  const selectedCount = selectedIds.size;
 
-  const handleGenerate = async (force = false) => {
-    if (!force && cachedFingerprintRef.current === itemsFingerprint && recipes.length > 0) {
+  const toggleItem = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // Smart mode generate
+  const handleSmartGenerate = async (force = false) => {
+    if (!force && smartFingerprintRef.current === smartFingerprint && smartRecipes.length > 0) {
       return;
     }
 
-    setGenerating(true);
-    setGenError(null);
+    setSmartGenerating(true);
+    setSmartError(null);
 
     try {
       const result = await fetchRecipeSuggestions(urgent, soon, fresh);
-      setRecipes(result);
-      cachedFingerprintRef.current = itemsFingerprint;
+      setSmartRecipes(result);
+      smartFingerprintRef.current = smartFingerprint;
     } catch (err) {
-      setGenError(err instanceof Error ? err.message : "Something went wrong");
+      setSmartError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
-      setGenerating(false);
+      setSmartGenerating(false);
+    }
+  };
+
+  // Pick mode generate
+  const handlePickGenerate = async (force = false) => {
+    const pickFingerprint = [...selectedIds].sort().join(",");
+    if (!force && pickFingerprintRef.current === pickFingerprint && pickRecipes.length > 0) {
+      return;
+    }
+
+    setPickGenerating(true);
+    setPickError(null);
+
+    try {
+      const selected = allItems.filter((i) => selectedIds.has(i.id));
+      const result = await fetchRecipesForSelectedItems(selected);
+      setPickRecipes(result);
+      pickFingerprintRef.current = pickFingerprint;
+    } catch (err) {
+      setPickError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setPickGenerating(false);
     }
   };
 
@@ -118,6 +175,10 @@ export default function RecipesScreen() {
     );
   }
 
+  const activeRecipes = mode === "smart" ? smartRecipes : pickRecipes;
+  const activeGenerating = mode === "smart" ? smartGenerating : pickGenerating;
+  const activeError = mode === "smart" ? smartError : pickError;
+
   return (
     <View style={styles.screen}>
       <View style={styles.navBar}>
@@ -126,7 +187,10 @@ export default function RecipesScreen() {
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          mode === "choose" && selectedCount >= 2 && styles.contentWithBar,
+        ]}
         keyboardShouldPersistTaps="handled"
       >
         {/* Inventory summary */}
@@ -161,42 +225,64 @@ export default function RecipesScreen() {
             </View>
 
             {mode === "choose" ? (
-              <View style={styles.comingSoon}>
-                <Text style={styles.comingSoonText}>Coming in next update</Text>
-              </View>
-            ) : (
               <>
-                {/* Smart pick prompt card */}
-                <View style={styles.promptCard}>
-                  <Text style={styles.promptTitle}>What can I cook tonight?</Text>
-                  <Text style={styles.promptSubtitle}>
-                    Claude will prioritize your expiring items
-                  </Text>
-
-                  {generating ? (
-                    <View style={styles.loadingRow}>
-                      <ActivityIndicator color={Colors.blue} size="small" />
-                      <Text style={styles.loadingText}>Asking Claude...</Text>
-                    </View>
-                  ) : genError ? (
-                    <View style={styles.errorBlock}>
-                      <Text style={styles.errorText}>{genError}</Text>
-                      <TouchableOpacity onPress={() => handleGenerate(true)}>
-                        <Text style={styles.tryAgainText}>Try again</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.suggestBtn}
-                      onPress={() => handleGenerate(false)}
-                    >
-                      <Text style={styles.suggestBtnText}>Suggest recipes →</Text>
-                    </TouchableOpacity>
-                  )}
+                {/* Pick mode header */}
+                <View style={styles.pickHeader}>
+                  <Text style={styles.pickLabel}>Select items to cook with</Text>
+                  <Text style={styles.pickCount}>{selectedCount} selected</Text>
                 </View>
 
-                {/* Recipe cards */}
-                {recipes.map((recipe, idx) => {
+                {/* Pick mode item list */}
+                {expiringSoonItems.length > 0 && (
+                  <>
+                    <Text style={styles.sectionHeader}>Expiring soon</Text>
+                    <View style={styles.itemList}>
+                      {expiringSoonItems.map((item) => (
+                        <SelectableItemRow
+                          key={item.id}
+                          item={item}
+                          selected={selectedIds.has(item.id)}
+                          onToggle={() => toggleItem(item.id)}
+                        />
+                      ))}
+                    </View>
+                  </>
+                )}
+
+                {restItems.length > 0 && (
+                  <>
+                    <Text style={styles.sectionHeader}>All items</Text>
+                    <View style={styles.itemList}>
+                      {restItems.map((item) => (
+                        <SelectableItemRow
+                          key={item.id}
+                          item={item}
+                          selected={selectedIds.has(item.id)}
+                          onToggle={() => toggleItem(item.id)}
+                        />
+                      ))}
+                    </View>
+                  </>
+                )}
+
+                {/* Pick mode loading/error/recipe cards */}
+                {pickGenerating && (
+                  <View style={styles.loadingRow}>
+                    <ActivityIndicator color={Colors.blue} size="small" />
+                    <Text style={styles.loadingText}>Asking Claude...</Text>
+                  </View>
+                )}
+
+                {pickError && (
+                  <View style={styles.errorBlockPick}>
+                    <Text style={styles.errorText}>{pickError}</Text>
+                    <TouchableOpacity onPress={() => handlePickGenerate(true)}>
+                      <Text style={styles.tryAgainText}>Try again</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {pickRecipes.map((recipe, idx) => {
                   const colors = DIFFICULTY_COLORS[recipe.difficulty] ?? DIFFICULTY_COLORS.Easy;
                   return (
                     <View key={idx} style={styles.recipeCard}>
@@ -210,7 +296,6 @@ export default function RecipesScreen() {
                           </Text>
                         </View>
                       </View>
-
                       <Text style={styles.usesLabel}>
                         Uses:{" "}
                         {recipe.usesItems.map((item, i) => (
@@ -221,18 +306,87 @@ export default function RecipesScreen() {
                           </Text>
                         ))}
                       </Text>
-
                       <Text style={styles.recipeDesc}>{recipe.description}</Text>
-
                       <Text style={styles.cookTime}>⏱ {recipe.cookTime}</Text>
                     </View>
                   );
                 })}
 
-                {recipes.length > 0 && (
+                {pickRecipes.length > 0 && (
                   <TouchableOpacity
                     style={styles.regenBtn}
-                    onPress={() => handleGenerate(true)}
+                    onPress={() => handlePickGenerate(true)}
+                  >
+                    <Text style={styles.regenText}>↺ Regenerate</Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            ) : (
+              <>
+                {/* Smart pick prompt card */}
+                <View style={styles.promptCard}>
+                  <Text style={styles.promptTitle}>What can I cook tonight?</Text>
+                  <Text style={styles.promptSubtitle}>
+                    Claude will prioritize your expiring items
+                  </Text>
+
+                  {smartGenerating ? (
+                    <View style={styles.loadingRow}>
+                      <ActivityIndicator color={Colors.blue} size="small" />
+                      <Text style={styles.loadingText}>Asking Claude...</Text>
+                    </View>
+                  ) : smartError ? (
+                    <View style={styles.errorBlock}>
+                      <Text style={styles.errorText}>{smartError}</Text>
+                      <TouchableOpacity onPress={() => handleSmartGenerate(true)}>
+                        <Text style={styles.tryAgainText}>Try again</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.suggestBtn}
+                      onPress={() => handleSmartGenerate(false)}
+                    >
+                      <Text style={styles.suggestBtnText}>Suggest recipes →</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Smart recipe cards */}
+                {smartRecipes.map((recipe, idx) => {
+                  const colors = DIFFICULTY_COLORS[recipe.difficulty] ?? DIFFICULTY_COLORS.Easy;
+                  return (
+                    <View key={idx} style={styles.recipeCard}>
+                      <View style={styles.recipeHeader}>
+                        <Text style={styles.recipeName}>
+                          {recipe.emoji} {recipe.name}
+                        </Text>
+                        <View style={[styles.diffBadge, { backgroundColor: colors.bg }]}>
+                          <Text style={[styles.diffText, { color: colors.text }]}>
+                            {recipe.difficulty}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={styles.usesLabel}>
+                        Uses:{" "}
+                        {recipe.usesItems.map((item, i) => (
+                          <Text key={i}>
+                            {i > 0 ? ", " : ""}
+                            {item}
+                            {recipe.urgentItems.includes(item) ? " ⚠️" : ""}
+                          </Text>
+                        ))}
+                      </Text>
+                      <Text style={styles.recipeDesc}>{recipe.description}</Text>
+                      <Text style={styles.cookTime}>⏱ {recipe.cookTime}</Text>
+                    </View>
+                  );
+                })}
+
+                {smartRecipes.length > 0 && (
+                  <TouchableOpacity
+                    style={styles.regenBtn}
+                    onPress={() => handleSmartGenerate(true)}
                   >
                     <Text style={styles.regenText}>↺ Regenerate</Text>
                   </TouchableOpacity>
@@ -242,6 +396,28 @@ export default function RecipesScreen() {
           </>
         )}
       </ScrollView>
+
+      {/* Sticky bottom bar for pick mode */}
+      {mode === "choose" && (
+        <View style={styles.bottomBar}>
+          <TouchableOpacity
+            style={[styles.pickSuggestBtn, selectedCount < 2 && styles.pickSuggestBtnDisabled]}
+            onPress={() => handlePickGenerate(false)}
+            disabled={selectedCount < 2 || pickGenerating}
+          >
+            <Text
+              style={[
+                styles.pickSuggestBtnText,
+                selectedCount < 2 && styles.pickSuggestBtnTextDisabled,
+              ]}
+            >
+              {pickGenerating
+                ? "Asking Claude..."
+                : `Suggest recipes using ${selectedCount} items →`}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -276,6 +452,9 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 40,
+  },
+  contentWithBar: {
+    paddingBottom: 100,
   },
   summary: {
     fontSize: 13,
@@ -322,13 +501,37 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     fontWeight: "600",
   },
-  comingSoon: {
+  pickHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: 60,
+    marginBottom: 12,
   },
-  comingSoonText: {
+  pickLabel: {
     fontSize: 15,
+    fontWeight: "600",
+    color: Colors.textPrimary,
+  },
+  pickCount: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.blue,
+  },
+  sectionHeader: {
+    fontSize: 12,
+    fontWeight: "600",
     color: Colors.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+    marginBottom: 6,
+    marginTop: 8,
+  },
+  itemList: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    overflow: "hidden",
+    marginBottom: 12,
   },
   promptCard: {
     backgroundColor: "#fff",
@@ -375,6 +578,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
+  errorBlockPick: {
+    alignItems: "center",
+    gap: 8,
+    marginTop: 16,
+  },
   errorText: {
     color: Colors.red,
     fontSize: 14,
@@ -392,6 +600,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     padding: 16,
     marginBottom: 12,
+    marginTop: 4,
   },
   recipeHeader: {
     flexDirection: "row",
@@ -438,5 +647,33 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.blue,
     fontWeight: "500",
+  },
+  bottomBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#fff",
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    padding: 16,
+    paddingBottom: 34,
+  },
+  pickSuggestBtn: {
+    backgroundColor: Colors.blue,
+    borderRadius: 10,
+    padding: 16,
+    alignItems: "center",
+  },
+  pickSuggestBtnDisabled: {
+    backgroundColor: Colors.border,
+  },
+  pickSuggestBtnText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  pickSuggestBtnTextDisabled: {
+    color: Colors.textSecondary,
   },
 });

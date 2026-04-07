@@ -272,56 +272,35 @@ Every new feature task must include unit tests. Specifically:
 
 ## Current task
 
-Task 2 of 3: Build the Anthropic API utility and smart suggestions
-mode on the recipes tab.
+Task 3 of 3: Add pick mode with checkbox item selection to the
+recipes tab.
 
-### 1. Utility: `lib/anthropic.ts`
+### 1. Update `lib/anthropic.ts`
 
-Create a utility for calling the Anthropic API:
-
-```typescript
-export interface Recipe {
-  name: string;
-  emoji: string;
-  usesItems: string[];
-  urgentItems: string[];
-  description: string;
-  cookTime: string;
-  difficulty: "Easy" | "Medium" | "Hard";
-}
-```
-
-Export an async function `fetchRecipeSuggestions`:
+Add a second exported function `fetchRecipesForSelectedItems`:
 
 ```typescript
-export async function fetchRecipeSuggestions(
-  urgent: Item[], // expiry ≤ 2 days
-  soon: Item[], // expiry 3-5 days
-  fresh: Item[], // expiry 6+ days
-): Promise;
+export async function fetchRecipesForSelectedItems(
+  selectedItems: Item[],
+): Promise<Recipe[]>;
 ```
 
 The function should:
 
-- Build a prompt using the three weighted item tiers:
+- Build a prompt for specific item selection:
 
 ```text
-You are a helpful cooking assistant. Suggest recipes based on
-available ingredients, prioritizing items that expire soonest.
-URGENT - expires in 1-2 days:
-${urgent items or '(none)'}
-EXPIRING SOON - expires in 3-5 days:
-${soon items or '(none)'}
-IN STOCK - 6+ days remaining:
-${fresh items or '(none)'}
+You are a helpful cooking assistant. The user wants to cook
+using these specific ingredients:
+${selectedItems.map(i => - ${i.name} (expires in X days)).join('\n')}
+Common pantry staples (salt, pepper, oil, basic spices) are
+always available.
 Rules:
 
-Prioritize using URGENT and EXPIRING SOON items first
-Each recipe must use at least one item from the list
-Common pantry staples (salt, pepper, oil, basic spices) are
-always available and can be assumed
-Suggest exactly 3 recipes (or fewer if very limited ingredients)
-Respond ONLY with a valid JSON array, no markdown, no explanation:
+Suggest exactly 3 recipes using ONLY the listed ingredients
+plus pantry staples
+Do not suggest recipes requiring unlisted ingredients
+Respond ONLY with a valid JSON array, no markdown:
 [{
 "name": string,
 "emoji": string,
@@ -333,98 +312,63 @@ Respond ONLY with a valid JSON array, no markdown, no explanation:
 }]
 ```
 
-- Call the Anthropic API:
+- Same API call pattern as fetchRecipeSuggestions
+- Return parsed Recipe[] or throw on error
 
-```typescript
-const response = await fetch("https://api.anthropic.com/v1/messages", {
-  method: "POST",
-  headers: {
-    "x-api-key": process.env.ANTHROPIC_API_KEY!,
-    "anthropic-version": "2023-06-01",
-    "content-type": "application/json",
-  },
-  body: JSON.stringify({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 1024,
-    messages: [{role: "user", content: prompt}],
-  }),
-});
-```
+### 2. Component: `components/SelectableItemRow.tsx`
 
-- Parse the response: extract text from
-  `data.content[0].text`, strip any markdown fences,
-  parse as JSON array
-- Return parsed Recipe[] array
-- On any error (network, parse, API error) throw with
-  a descriptive message
+A variant of ItemRow with a checkbox:
 
-### 2. Unit tests: `__tests__/anthropic.test.ts`
+- Accepts item, selected (boolean), onToggle callback
+- Checkbox on the left (use a simple square with checkmark
+  rendered as styled View components, not a library)
+- Item name, category, quantity as usual
+- ExpiryPill on the right
+- Tapping anywhere on the row toggles selection
+- Selected state: checkbox filled with Colors.blue,
+  row has subtle blue tinted background
+- Unselected state: empty checkbox border, white background
+- Uses Colors from constants/colors.ts
 
-Write tests for lib/anthropic.ts:
+### 3. Update `app/(tabs)/recipes.tsx` — add pick mode
 
-- Mock global fetch
-- Test successful response returns parsed Recipe array
-- Test malformed JSON response throws error
-- Test network error throws error
-- Test empty inventory returns recipes array
-- Verify correct headers are sent in the request
-- Verify model is claude-sonnet-4-20250514
+Replace the "Coming in next update" placeholder in the
+"I'll choose" segment with the full pick mode:
 
-### 3. Screen: `app/(tabs)/recipes.tsx` — smart mode only
+Pick mode layout:
 
-Replace the placeholder with the full smart suggestions screen.
-For now implement smart mode only (pick mode comes in Task 3).
+- Header row: "Select items to cook with" label on left,
+  "X selected" count on right in blue
+- Full scrollable list of ALL active household items
+  sorted by expiry_date ASC using SelectableItemRow
+- Items grouped into two sections:
+  - "Expiring soon" section (≤5 days) shown first
+  - "All items" section (6+ days) shown below
+  - Section headers as muted uppercase labels
+- No pre-selection — all items start unchecked
+- Sticky bottom bar that appears when ≥2 items selected:
+  - "Suggest recipes using X items →" button (blue)
+  - Disabled and grayed out when < 2 items selected
+- Loading and error states same as smart mode
+- Recipe cards same component as smart mode
+- Caching: fingerprint = selected item IDs sorted and joined
+  Cache separately from smart mode recipes
 
-Layout:
+### 4. Update `__tests__/anthropic.test.ts`
 
-- Screen title "Recipes" in nav bar
-- Uses useAuth and useHousehold to get household
-- Uses useItems-style raw fetch to get ALL active items
-  across all household locations (same query as search screen)
-- Splits items into three tiers using getExpiryStatus from
-  types/index.ts:
-  - urgent: status === 'critical' or 'expired'
-  - soon: status === 'warning'
-  - fresh: status === 'fresh'
+Add tests for fetchRecipesForSelectedItems:
 
-Top section — inventory summary:
-
-- Muted text showing e.g. "3 expiring soon · 12 total items"
-- If 0 items total show empty state: "Add some items to your
-  inventory to get recipe suggestions"
-
-Segmented control:
-
-- Two options: "Smart pick" and "I'll choose"
-- For now "I'll choose" shows "Coming in next update" placeholder
-- We will replace this in Task 3
-
-Smart pick section:
-
-- A card with:
-  - Title "What can I cook tonight?"
-  - Subtitle "Claude will prioritize your expiring items"
-  - "Suggest recipes →" button
-- Loading state: replace button with spinner +
-  "Asking Claude..." text
-- Error state: show error message in red with "Try again" button
-
-Recipe cards (shown after generation):
-
-- Each recipe in a card with:
-  - Emoji + name on the same line, difficulty badge on the right
-    (green=Easy, amber=Medium, red=Hard)
-  - "Uses: item1 ⚠️, item2, item3" — ⚠️ on urgentItems only
-  - Description text (muted, smaller)
-  - Cook time with ⏱ icon at bottom
-- Below all cards a "↺ Regenerate" text button
-- Caching: store recipes in state with an itemsFingerprint
-  (all active item IDs joined and sorted)
-  Only re-fetch if fingerprint changes or user taps Regenerate
+- Mock fetch, verify correct prompt structure is sent
+- Verify selected item names appear in prompt
+- Test successful parse returns Recipe array
+- Test error handling
 
 ### Notes
 
-- ANTHROPIC*API_KEY is in .env.local without EXPO_PUBLIC* prefix
+- Sticky bottom bar: use a View with position absolute at
+  bottom of screen, not position fixed
+  Add paddingBottom to ScrollView to prevent content hiding
+  behind it
 - Use StyleSheet.create for all styles
 - After all files written run `npm test` and `npx tsc --noEmit`
   fix all errors before committing
