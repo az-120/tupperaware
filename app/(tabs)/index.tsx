@@ -7,22 +7,27 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from "react-native";
-import { useEffect, useState } from "react";
-import { useRouter } from "expo-router";
-import { useAuth } from "../../hooks/useAuth";
-import { useHousehold } from "../../hooks/useHousehold";
-import { useLocations } from "../../hooks/useLocations";
-import { StatCard } from "../../components/StatCard";
-import { LocationCard } from "../../components/LocationCard";
-import { daysUntilExpiry } from "../../lib/expiry";
-import { Colors } from "../../constants/colors";
-import { supabase } from "../../lib/supabase";
+import {useEffect, useState} from "react";
+import {useRouter} from "expo-router";
+import {useAuth} from "../../hooks/useAuth";
+import {useHousehold} from "../../hooks/useHousehold";
+import {useLocations} from "../../hooks/useLocations";
+import {StatCard} from "../../components/StatCard";
+import {LocationCard} from "../../components/LocationCard";
+import {daysUntilExpiry} from "../../lib/expiry";
+import {Colors} from "../../constants/colors";
+import {Typography} from "../../constants/typography";
+import {supabase} from "../../lib/supabase";
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { user } = useAuth();
-  const { household, loading: householdLoading } = useHousehold();
-  const { locations, loading: locationsLoading, refresh } = useLocations(household?.id ?? null);
+  const {user} = useAuth();
+  const {household, loading: householdLoading} = useHousehold();
+  const {
+    locations,
+    loading: locationsLoading,
+    refresh,
+  } = useLocations(household?.id ?? null);
 
   const [memberCount, setMemberCount] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -44,7 +49,7 @@ export default function HomeScreen() {
       },
     );
     if (res.ok) {
-      const data = (await res.json()) as { id: string }[];
+      const data = (await res.json()) as {id: string}[];
       setMemberCount(data.length);
     }
   };
@@ -69,7 +74,9 @@ export default function HomeScreen() {
     const d = daysUntilExpiry(i.expiry_date);
     return d >= 0 && d <= 5;
   }).length;
-  const fresh = allItems.filter((i) => daysUntilExpiry(i.expiry_date) > 5).length;
+  const fresh = allItems.filter(
+    (i) => daysUntilExpiry(i.expiry_date) > 5,
+  ).length;
   const critical = allItems.filter((i) => {
     const d = daysUntilExpiry(i.expiry_date);
     return d >= 0 && d <= 2;
@@ -80,12 +87,17 @@ export default function HomeScreen() {
       style={styles.scroll}
       contentContainerStyle={styles.container}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={Colors.blue} />
-      }
-    >
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={Colors.blue}
+        />
+      }>
       <View style={styles.header}>
         <View>
-          <Text style={styles.householdName}>{household?.name ?? "My Household"}</Text>
+          <Text style={styles.householdName}>
+            {household?.name ?? "My Household"}
+          </Text>
           {memberCount !== null && (
             <Text style={styles.memberCount}>
               {memberCount} {memberCount === 1 ? "member" : "members"}
@@ -96,16 +108,24 @@ export default function HomeScreen() {
 
       <View style={styles.statRow}>
         <StatCard label="Total Items" value={total} />
-        <StatCard label="Expiring Soon" value={expiringSoon} color={Colors.amber} />
+        <StatCard
+          label="Expiring Soon"
+          value={expiringSoon}
+          color={Colors.amber}
+        />
         <StatCard label="Fresh" value={fresh} color={Colors.green} />
       </View>
 
       {critical > 0 && (
         <View style={styles.alertBanner}>
           <Text style={styles.alertText}>
-            {critical} {critical === 1 ? "item expires" : "items expire"} within 2 days
+            {critical} {critical === 1 ? "item expires" : "items expire"} within
+            2 days
           </Text>
-          <TouchableOpacity onPress={() => router.push("/expiring" as Parameters<typeof router.push>[0])}>
+          <TouchableOpacity
+            onPress={() =>
+              router.push("/expiring" as Parameters<typeof router.push>[0])
+            }>
             <Text style={styles.alertLink}>View</Text>
           </TouchableOpacity>
         </View>
@@ -125,7 +145,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   scroll: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
   },
   container: {
     padding: 20,
@@ -136,18 +156,19 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
   },
   header: {
     marginBottom: 20,
   },
   householdName: {
     fontSize: 24,
-    fontWeight: "700",
+    fontFamily: Typography.bold,
     color: Colors.textPrimary,
   },
   memberCount: {
     fontSize: 13,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
     marginTop: 2,
   },
@@ -170,13 +191,13 @@ const styles = StyleSheet.create({
   alertText: {
     color: Colors.red,
     fontSize: 13,
-    fontWeight: "500",
+    fontFamily: Typography.medium,
     flex: 1,
   },
   alertLink: {
     color: Colors.red,
     fontSize: 13,
-    fontWeight: "700",
+    fontFamily: Typography.bold,
     marginLeft: 8,
   },
   empty: {
@@ -186,5 +207,6 @@ const styles = StyleSheet.create({
   emptyText: {
     color: Colors.textSecondary,
     fontSize: 15,
+    fontFamily: Typography.regular,
   },
 });

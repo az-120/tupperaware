@@ -272,375 +272,213 @@ Every new feature task must include unit tests. Specifically:
 
 ## Current task
 
-Task: Implement a systematic validation plan for data correctness
-across the entire codebase.
+Task: Visual polish — white backgrounds and Inter typography.
 
-### 1. `__tests__/fixtures.ts` — shared canonical test dataset
+### 1. Install Inter font
 
-Create a single source of truth for test data used across ALL
-test files:
+Run before writing any code:
+
+```bash
+npx expo install expo-font @expo-google-fonts/inter
+```
+
+### 2. Update `app/_layout.tsx`
+
+Load Inter font variants on app startup:
 
 ```typescript
-import {Item, Location, Household} from "../types";
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from "@expo-google-fonts/inter";
+import * as SplashScreen from "expo-splash-screen";
 
-export const mockHousehold: Household = {
-  id: "hh-1",
-  name: "Test Household",
-  created_at: "2026-01-01T00:00:00Z",
+SplashScreen.preventAutoHideAsync();
+
+export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) SplashScreen.hideAsync();
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
+  // ... rest of existing layout logic
+}
+```
+
+### 3. Update `constants/typography.ts` (create new file)
+
+```typescript
+export const Typography = {
+  // Font families
+  regular: "Inter_400Regular",
+  medium: "Inter_500Medium",
+  semibold: "Inter_600SemiBold",
+  bold: "Inter_700Bold",
+
+  // Font sizes
+  xs: 11,
+  sm: 13,
+  base: 15,
+  md: 17,
+  lg: 20,
+  xl: 24,
+  xxl: 30,
+
+  // Line heights
+  tight: 1.2,
+  normal: 1.5,
+  loose: 1.7,
+
+  // Letter spacing
+  tight_tracking: -0.3,
+  normal_tracking: 0,
+  wide_tracking: 0.5,
+  wider_tracking: 1.0,
 };
+```
 
-export const mockLocations: Location[] = [
-  {
-    id: "loc-1",
-    name: "Fridge",
-    icon: "🧊",
-    household_id: "hh-1",
-    created_at: "2026-01-01T00:00:00Z",
-  },
-  {
-    id: "loc-2",
-    name: "Pantry",
-    icon: "🥫",
-    household_id: "hh-1",
-    created_at: "2026-01-01T00:00:00Z",
-  },
-];
+### 4. Update `constants/colors.ts`
 
-export const mockItems: Item[] = [
-  {
-    id: "1",
-    name: "Whole Milk",
-    category: "Dairy",
-    status: "used",
-    partially_used: false,
-    location_id: "loc-1",
-    emoji: "🥛",
-    expiry_date: "2026-04-10",
-    quantity: "1 gal",
-    updated_at: "2026-03-01T12:00:00Z",
-    created_at: "2026-02-20T12:00:00Z",
-    added_by: "user-1",
-  },
-  {
-    id: "2",
-    name: "Spinach",
-    category: "Produce",
-    status: "discarded",
-    partially_used: false,
-    location_id: "loc-1",
-    emoji: "🥦",
-    expiry_date: "2026-03-28",
-    quantity: "1 bag",
-    updated_at: "2026-03-05T12:00:00Z",
-    created_at: "2026-02-25T12:00:00Z",
-    added_by: "user-1",
-  },
-  {
-    id: "3",
-    name: "Chicken Breast",
-    category: "Meat",
-    status: "discarded",
-    partially_used: false,
-    location_id: "loc-2",
-    emoji: "🥩",
-    expiry_date: "2026-03-30",
-    quantity: "2 lbs",
-    updated_at: "2026-03-10T12:00:00Z",
-    created_at: "2026-03-08T12:00:00Z",
-    added_by: "user-1",
-  },
-  {
-    id: "4",
-    name: "Eggs",
-    category: "Dairy",
-    status: "active",
-    partially_used: true,
-    location_id: "loc-1",
-    emoji: "🥚",
-    expiry_date: "2026-04-20",
-    quantity: "12 ct",
-    updated_at: "2026-03-15T12:00:00Z",
-    created_at: "2026-03-01T12:00:00Z",
-    added_by: "user-1",
-  },
-  {
-    id: "5",
-    name: "Rice",
-    category: "Pantry",
-    status: "used",
-    partially_used: false,
-    location_id: "loc-2",
-    emoji: "🥫",
-    expiry_date: "2026-12-01",
-    quantity: "5 lbs",
-    updated_at: "2026-03-20T12:00:00Z",
-    created_at: "2026-03-10T12:00:00Z",
-    added_by: "user-1",
-  },
-  {
-    id: "6",
-    name: "Greek Yogurt",
-    category: "Dairy",
-    status: "active",
-    partially_used: false,
-    location_id: "loc-1",
-    emoji: "🫙",
-    expiry_date: "2026-04-14",
-    quantity: "32oz",
-    updated_at: "2026-03-20T12:00:00Z",
-    created_at: "2026-03-15T12:00:00Z",
-    added_by: "user-1",
-  },
-];
+Refine the color palette for a cleaner white-first design:
 
-// Known expected outputs — pre-computed by hand for verification
-export const expectedSummary = {
-  totalConsumed: 4, // milk(used) + spinach(discarded) +
-  // chicken(discarded) + rice(used)
-  totalUsed: 2, // milk, rice
-  totalDiscarded: 2, // spinach, chicken
-  wasteRate: 50, // 2 discarded / 4 consumed * 100
-  activeItems: 2, // eggs, yogurt
-  partialItems: 1, // eggs
+```typescript
+export const Colors = {
+  // Base
+  white: "#FFFFFF",
+  background: "#FFFFFF", // was gray — now pure white
+  surface: "#FFFFFF", // cards also white
+  surfaceAlt: "#F8F8F8", // very subtle off-white for inputs
+  border: "#EBEBEB", // lighter, more refined border
+  borderLight: "#F2F2F2", // even subtler dividers
+
+  // Brand
+  blue: "#185FA5",
+  blueBg: "#EEF5FC", // lighter, cleaner blue tint
+  blueMid: "#378ADD",
+
+  // Semantic
+  green: "#3B6D11",
+  greenBg: "#F0F7E6", // lighter green tint
+  amber: "#854F0B",
+  amberBg: "#FDF3E3", // lighter amber tint
+  red: "#A32D2D",
+  redBg: "#FEF1F1", // lighter red tint
+
+  // Text
+  textPrimary: "#1A1A1A", // near black, softer than pure black
+  textSecondary: "#6B6B6B", // medium gray
+  textTertiary: "#A0A0A0", // light gray for hints/placeholders
+  textInverse: "#FFFFFF",
 };
-
-export const expectedCategoryWaste = [
-  {category: "Dairy", discarded: 0, used: 1, wasteRate: 0},
-  {category: "Produce", discarded: 1, used: 0, wasteRate: 100},
-  {category: "Meat", discarded: 1, used: 0, wasteRate: 100},
-  {category: "Pantry", discarded: 0, used: 1, wasteRate: 0},
-];
 ```
 
-### 2. `lib/validators.ts` — runtime data shape validators
+### 5. Global style updates
 
-Create a utility for validating data shapes from Supabase before
-use in the app. Export these pure functions:
-
-```typescript
-export interface ValidationResult {
-  valid: boolean;
-  errors: string[];
-  rowCount: number;
-}
-
-export function validateItems(data: unknown): ValidationResult;
-// Checks:
-// - data is an array
-// - each item has required fields: id, name, category, status,
-//   location_id, expiry_date
-// - status is one of: 'active', 'used', 'discarded'
-// - category is one of: 'Dairy','Produce','Meat','Frozen','Pantry','Other'
-// - expiry_date is a valid date string (YYYY-MM-DD format)
-// - logs warning for any item missing optional fields
-
-export function validateLocations(data: unknown): ValidationResult;
-// Checks:
-// - data is an array
-// - each location has: id, name, household_id
-// - name is non-empty string
-
-export function validateHousehold(data: unknown): ValidationResult;
-// Checks:
-// - data is an object (not array)
-// - has required fields: id, name
-// - name is non-empty string
-
-export function validateRecipes(data: unknown): ValidationResult;
-// Checks:
-// - data is an array of 1-3 items
-// - each recipe has: name, emoji, usesItems, description,
-//   cookTime, difficulty
-// - difficulty is one of: 'Easy', 'Medium', 'Hard'
-// - usesItems is a non-empty array
-// - description is non-empty string
-```
-
-Each validator should:
-
-- Log a warning in `__DEV__` mode for each validation error found
-- Log row count on success: `[validators] items: 12 rows validated OK`
-- Return ValidationResult with all errors collected (not just first)
-
-### 3. Add `__DEV__` logging to all `lib/` utilities
-
-Update each file with intermediate result logging:
-
-`lib/analytics.ts` — log after each computation:
+Create `constants/globalStyles.ts`:
 
 ```typescript
-if (__DEV__) {
-  console.log("[analytics] input:", items.length, "items");
-  console.log(
-    "[analytics] used:",
-    totalUsed,
-    "discarded:",
-    totalDiscarded,
-    "waste rate:",
-    wasteRate.toFixed(1) + "%",
-  );
-  console.log(
-    "[analytics] category breakdown:",
-    categoryWaste.map((c) => `${c.category}:${c.wasteRate}%`),
-  );
-}
-```
+import {StyleSheet} from "react-native";
+import {Colors} from "./colors";
+import {Typography} from "./typography";
 
-`lib/expiryDefaults.ts` — log lookup results:
-
-```typescript
-if (__DEV__) {
-  console.log(
-    "[expiryDefaults] lookup:",
-    name,
-    "→",
-    days,
-    "days (source:",
-    source,
-    ")",
-  );
-  // source should be 'exact', 'partial', or 'category fallback'
-}
-```
-
-`lib/openFoodFacts.ts` — log API response:
-
-```typescript
-if (__DEV__) {
-  console.log("[openFoodFacts] barcode:", barcode);
-  console.log("[openFoodFacts] raw response:", JSON.stringify(data));
-  console.log("[openFoodFacts] parsed:", result);
-}
-```
-
-`lib/anthropic.ts` — log prompt and response:
-
-```typescript
-if (__DEV__) {
-  console.log("[anthropic] prompt length:", prompt.length, "chars");
-  console.log("[anthropic] raw response:", rawText.slice(0, 200));
-  console.log("[anthropic] parsed recipes:", recipes.length);
-}
-```
-
-`lib/validation.ts` — log validation failures:
-
-```typescript
-if (__DEV__ && !result.valid) {
-  console.warn("[validation] failed:", field, "→", result.error);
-}
-```
-
-### 4. Integrate `lib/validators.ts` into hooks
-
-Update each hook to validate Supabase responses before setting state:
-
-`hooks/useItems.ts`:
-
-```typescript
-const result = validateItems(json);
-if (__DEV__ && !result.valid) {
-  console.warn("[useItems] validation errors:", result.errors);
-}
-// still set state even if invalid — don't block the UI
-// but log so developer knows data is malformed
-setItems(json as Item[]);
-```
-
-Apply same pattern to `hooks/useLocations.ts` and
-`hooks/useHousehold.ts`.
-
-### 5. Update ALL existing test files to use fixtures
-
-Update these test files to import from `__tests__/fixtures.ts`
-instead of defining their own inline mock data:
-
-- `__tests__/analytics.test.ts`
-- `__tests__/expiryDefaults.test.ts`
-- `__tests__/validation.test.ts`
-- `__tests__/openFoodFacts.test.ts`
-- `__tests__/anthropic.test.ts`
-
-### 6. Add range checks and known-answer tests to ALL test files
-
-`__tests__/analytics.test.ts` — add:
-
-```typescript
-describe("range checks", () => {
-  it("waste rate is always between 0 and 100");
-  it("totalUsed + totalDiscarded always equals totalConsumed");
-  it("item counts are never negative");
-  it("waste rate is exactly 50% for mockItems dataset");
-  // verify against expectedSummary from fixtures
-  it("computeSummary matches expectedSummary for fixture dataset");
+export const GlobalStyles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  card: {
+    backgroundColor: Colors.white,
+    borderRadius: 14,
+    borderWidth: 0.5,
+    borderColor: Colors.border,
+    padding: 16,
+    marginBottom: 12,
+  },
+  sectionHeader: {
+    fontSize: Typography.xs,
+    fontFamily: Typography.semibold,
+    color: Colors.textTertiary,
+    letterSpacing: Typography.wider_tracking,
+    textTransform: "uppercase",
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  navTitle: {
+    fontSize: Typography.md,
+    fontFamily: Typography.semibold,
+    color: Colors.textPrimary,
+  },
+  bodyText: {
+    fontSize: Typography.base,
+    fontFamily: Typography.regular,
+    color: Colors.textPrimary,
+    lineHeight: Typography.base * Typography.normal,
+  },
+  mutedText: {
+    fontSize: Typography.sm,
+    fontFamily: Typography.regular,
+    color: Colors.textSecondary,
+  },
 });
 ```
 
-`__tests__/expiryDefaults.test.ts` — add:
+### 6. Apply across all screens and components
 
-```typescript
-describe("range checks", () => {
-  it("getExpiryDays always returns a positive number");
-  it("getExpiryDays never returns 0 or negative");
-  it("getSuggestedExpiryDate always returns a future date");
-  it("normalizeDate always sets hours to 12");
-  it("known answer: eggs → exactly 21 days");
-  it("known answer: milk → exactly 7 days");
-  it("known answer: unknown item with Dairy category → 7 days fallback");
-});
-```
+Update every file that has `backgroundColor` set to a gray/surface
+color. Specifically:
 
-`__tests__/validation.test.ts` — add:
+For each of these files, find all StyleSheet entries with
+backgroundColor and apply the white-first system:
 
-```typescript
-describe("boundary checks", () => {
-  it("item name at exactly 2 chars is valid");
-  it("item name at exactly 100 chars is valid");
-  it("item name at 1 char is invalid");
-  it("item name at 101 chars is invalid");
-  it("household name at exactly 2 chars is valid");
-  it("household name at exactly 50 chars is valid");
-  it("known valid email passes");
-  it("known invalid emails fail: missing @, missing domain, empty");
-});
-```
+- `app/(tabs)/index.tsx`
+- `app/(tabs)/recipes.tsx`
+- `app/(tabs)/search.tsx`
+- `app/(tabs)/profile.tsx`
+- `app/location/[id].tsx`
+- `app/item/[id].tsx`
+- `app/item/add.tsx`
+- `app/item/edit.tsx`
+- `app/analytics.tsx`
+- `app/auth/sign-in.tsx`
+- `app/auth/create-account.tsx`
+- `app/auth/create-household.tsx`
+- `components/ItemRow.tsx`
+- `components/LocationCard.tsx`
+- `components/ExpiryPill.tsx`
+- `components/StatCard.tsx`
 
-`__tests__/validators.test.ts` — new file:
+Rules for each file:
 
-```typescript
-describe("validateItems", () => {
-  it("returns valid for well-formed mockItems fixture");
-  it("returns rowCount matching input array length");
-  it("catches item missing required id field");
-  it("catches invalid status value");
-  it("catches invalid category value");
-  it("catches malformed expiry_date string");
-  it("handles empty array — valid with rowCount 0");
-  it("handles non-array input — returns invalid");
-});
-
-describe("validateLocations", () => {
-  it("returns valid for mockLocations fixture");
-  it("catches missing household_id");
-  it("catches empty name string");
-});
-
-describe("validateRecipes", () => {
-  it("returns valid for well-formed recipe array");
-  it("catches more than 3 recipes");
-  it("catches invalid difficulty value");
-  it("catches empty usesItems array");
-});
-```
+- Screen containers: `backgroundColor: Colors.background` (white)
+- Cards: `backgroundColor: Colors.white, borderColor: Colors.border,
+borderWidth: 0.5`
+- Section headers: use GlobalStyles.sectionHeader pattern
+- All text: replace hardcoded colors with Colors.textPrimary/
+  Secondary/Tertiary
+- All fontFamily: replace any existing fontFamily or add
+  fontFamily: Typography.regular (or medium/semibold where
+  appropriate for weight)
+- Headings/titles: Typography.semibold or Typography.bold
+- Body text: Typography.regular
+- Remove any backgroundColor from ScrollView containers —
+  they should be transparent
 
 ### Notes
 
-- fixtures.ts is imported by ALL test files — get it right first
-  before updating other tests
-- validators.ts is pure functions only — no React, no Supabase
-- **DEV** is a global boolean in React Native — no import needed
-- Do not change any application logic — only add logging and
-  validation checks around existing logic
-- After all files written run `npm test` and fix ALL failing tests
-- Then run `npx tsc --noEmit` and fix type errors
+- Do NOT change any layout, padding, or margin values —
+  this task is colors and typography only
+- Do NOT change any functional logic
+- Install expo-splash-screen if not already installed:
+  `npx expo install expo-splash-screen`
+- After all changes run `npx tsc --noEmit` and fix errors
 - Suggest a git commit message when done

@@ -11,6 +11,7 @@ import { useState } from "react";
 import { Link, useRouter } from "expo-router";
 import { supabase } from "../../lib/supabase";
 import { Colors } from "../../constants/colors";
+import { Typography } from "../../constants/typography";
 
 export default function SignInScreen() {
   const router = useRouter();
@@ -78,32 +79,35 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     justifyContent: "center",
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
   },
   title: {
     fontSize: 28,
-    fontWeight: "700",
+    fontFamily: Typography.bold,
     color: Colors.blue,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
     marginBottom: 32,
   },
   input: {
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
+    fontFamily: Typography.regular,
     color: Colors.textPrimary,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     marginBottom: 12,
   },
   error: {
     color: Colors.red,
     fontSize: 14,
+    fontFamily: Typography.regular,
     marginBottom: 12,
   },
   button: {
@@ -114,9 +118,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   buttonText: {
-    color: "#fff",
+    color: Colors.textInverse,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
   },
   forgotLink: {
     marginTop: 16,
@@ -127,5 +131,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: Colors.blue,
     fontSize: 14,
+    fontFamily: Typography.regular,
   },
 });

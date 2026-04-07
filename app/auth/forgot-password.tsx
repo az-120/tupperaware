@@ -12,6 +12,7 @@ import { useRouter } from "expo-router";
 import { supabase } from "../../lib/supabase";
 import { validateEmail } from "../../lib/validation";
 import { Colors } from "../../constants/colors";
+import { Typography } from "../../constants/typography";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -96,7 +97,7 @@ export default function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
   },
   navBar: {
     flexDirection: "row",
@@ -104,8 +105,8 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingBottom: 12,
     paddingHorizontal: 16,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
+    backgroundColor: Colors.white,
+    borderBottomWidth: 0.5,
     borderBottomColor: Colors.border,
   },
   navBtn: {
@@ -113,13 +114,14 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 17,
+    fontFamily: Typography.regular,
     color: Colors.blue,
   },
   navTitle: {
     flex: 1,
     textAlign: "center",
     fontSize: 17,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
     color: Colors.textPrimary,
   },
   body: {
@@ -129,18 +131,20 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 15,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
     marginBottom: 24,
     lineHeight: 22,
   },
   input: {
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
+    fontFamily: Typography.regular,
     color: Colors.textPrimary,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     marginBottom: 4,
   },
   inputError: {
@@ -149,11 +153,13 @@ const styles = StyleSheet.create({
   fieldError: {
     color: Colors.red,
     fontSize: 12,
+    fontFamily: Typography.regular,
     marginBottom: 12,
   },
   error: {
     color: Colors.red,
     fontSize: 14,
+    fontFamily: Typography.regular,
     marginBottom: 12,
   },
   button: {
@@ -164,9 +170,9 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   buttonText: {
-    color: "#fff",
+    color: Colors.textInverse,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
   },
   successBox: {
     flex: 1,
@@ -174,12 +180,13 @@ const styles = StyleSheet.create({
   },
   successTitle: {
     fontSize: 22,
-    fontWeight: "700",
+    fontFamily: Typography.bold,
     color: Colors.textPrimary,
     marginBottom: 12,
   },
   successText: {
     fontSize: 15,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
     lineHeight: 22,
     marginBottom: 8,

@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet } from "react-native";
 import { Colors } from "../constants/colors";
+import { Typography } from "../constants/typography";
 
 interface StatCardProps {
   label: string;
@@ -21,20 +22,21 @@ export function StatCard({ label, value, color }: StatCardProps) {
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     borderRadius: 12,
     padding: 14,
     alignItems: "center",
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
   },
   value: {
     fontSize: 28,
-    fontWeight: "700",
+    fontFamily: Typography.bold,
     marginBottom: 2,
   },
   label: {
     fontSize: 12,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
     textAlign: "center",
   },

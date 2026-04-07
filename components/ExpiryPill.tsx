@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet } from "react-native";
 import { Colors } from "../constants/colors";
+import { Typography } from "../constants/typography";
 import { daysUntilExpiry } from "../lib/expiry";
 
 interface ExpiryPillProps {
@@ -47,6 +48,6 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
   },
 });

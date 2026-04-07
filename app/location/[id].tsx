@@ -13,6 +13,7 @@ import { useItems } from "../../hooks/useItems";
 import { ItemRow } from "../../components/ItemRow";
 import { daysUntilExpiry } from "../../lib/expiry";
 import { Colors } from "../../constants/colors";
+import { Typography } from "../../constants/typography";
 import { supabase } from "../../lib/supabase";
 import { Item, ItemCategory, Location } from "../../types";
 
@@ -166,13 +167,13 @@ export default function LocationScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
   },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
   },
   navBar: {
     flexDirection: "row",
@@ -180,8 +181,8 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingBottom: 12,
     paddingHorizontal: 16,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
+    backgroundColor: Colors.white,
+    borderBottomWidth: 0.5,
     borderBottomColor: Colors.border,
   },
   backBtn: {
@@ -189,13 +190,14 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 17,
+    fontFamily: Typography.regular,
     color: Colors.blue,
   },
   navTitle: {
     flex: 1,
     textAlign: "center",
     fontSize: 17,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
     color: Colors.textPrimary,
   },
   addBtn: {
@@ -204,13 +206,13 @@ const styles = StyleSheet.create({
   },
   addText: {
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
     color: Colors.blue,
   },
   segmentRow: {
     flexDirection: "row",
     margin: 16,
-    backgroundColor: Colors.border,
+    backgroundColor: Colors.surfaceAlt,
     borderRadius: 10,
     padding: 3,
   },
@@ -221,16 +223,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   segmentActive: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
   },
   segmentText: {
     fontSize: 13,
-    fontWeight: "500",
+    fontFamily: Typography.medium,
     color: Colors.textSecondary,
   },
   segmentTextActive: {
     color: Colors.textPrimary,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
   },
   scroll: {
     flex: 1,
@@ -240,19 +242,19 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     fontSize: 12,
-    fontWeight: "600",
-    color: Colors.textSecondary,
+    fontFamily: Typography.semibold,
+    color: Colors.textTertiary,
     textTransform: "uppercase",
     letterSpacing: 0.6,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
   sectionList: {
-    borderTopWidth: 1,
+    borderTopWidth: 0.5,
     borderTopColor: Colors.border,
-    borderBottomWidth: 1,
+    borderBottomWidth: 0.5,
     borderBottomColor: Colors.border,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
   },
   empty: {
     marginTop: 60,
@@ -262,6 +264,7 @@ const styles = StyleSheet.create({
   emptyText: {
     color: Colors.textSecondary,
     fontSize: 15,
+    fontFamily: Typography.regular,
     textAlign: "center",
     lineHeight: 22,
   },

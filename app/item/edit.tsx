@@ -17,6 +17,7 @@ import { validateItemName } from "../../lib/validation";
 import { getSuggestedExpiryDate, normalizeDate } from "../../lib/expiryDefaults";
 import { supabase } from "../../lib/supabase";
 import { Colors } from "../../constants/colors";
+import { Typography } from "../../constants/typography";
 import { Item, ItemCategory } from "../../types";
 
 const CATEGORIES: ItemCategory[] = ["Dairy", "Produce", "Meat", "Frozen", "Pantry", "Other"];
@@ -292,17 +293,18 @@ export default function EditItemScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
   },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
   },
   fetchErrorText: {
     color: Colors.textSecondary,
     fontSize: 15,
+    fontFamily: Typography.regular,
   },
   navBar: {
     flexDirection: "row",
@@ -310,8 +312,8 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingBottom: 12,
     paddingHorizontal: 16,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
+    backgroundColor: Colors.white,
+    borderBottomWidth: 0.5,
     borderBottomColor: Colors.border,
   },
   navBtn: {
@@ -319,13 +321,14 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 17,
+    fontFamily: Typography.regular,
     color: Colors.blue,
   },
   navTitle: {
     flex: 1,
     textAlign: "center",
     fontSize: 17,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
     color: Colors.textPrimary,
   },
   scroll: {
@@ -337,21 +340,22 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    fontWeight: "600",
-    color: Colors.textSecondary,
+    fontFamily: Typography.semibold,
+    color: Colors.textTertiary,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 8,
     marginTop: 16,
   },
   input: {
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
     borderRadius: 10,
     padding: 13,
     fontSize: 16,
+    fontFamily: Typography.regular,
     color: Colors.textPrimary,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
   },
   inputError: {
     borderColor: Colors.red,
@@ -359,6 +363,7 @@ const styles = StyleSheet.create({
   fieldError: {
     color: Colors.red,
     fontSize: 12,
+    fontFamily: Typography.regular,
     marginTop: 4,
   },
   pillRow: {
@@ -370,9 +375,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.surfaceAlt,
   },
   pillActive: {
     backgroundColor: Colors.blue,
@@ -380,16 +385,16 @@ const styles = StyleSheet.create({
   },
   pillText: {
     fontSize: 13,
-    fontWeight: "500",
+    fontFamily: Typography.medium,
     color: Colors.textSecondary,
   },
   pillTextActive: {
-    color: "#fff",
+    color: Colors.textInverse,
   },
   datePicker: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     borderRadius: 10,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
     overflow: "hidden",
   },
@@ -403,7 +408,7 @@ const styles = StyleSheet.create({
   },
   partialBadgeText: {
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
     color: Colors.amber,
   },
   emojiPickerRow: {
@@ -433,9 +438,9 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.surfaceAlt,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -447,25 +452,27 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   emojiCustomInput: {
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
     borderRadius: 10,
     padding: 11,
     fontSize: 15,
+    fontFamily: Typography.regular,
     color: Colors.textPrimary,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     marginBottom: 4,
   },
   error: {
     color: Colors.red,
     fontSize: 14,
+    fontFamily: Typography.regular,
     marginTop: 16,
   },
   resetDateText: {
     fontSize: 13,
+    fontFamily: Typography.medium,
     color: Colors.blue,
     marginTop: 8,
-    fontWeight: "500",
   },
   saveBtn: {
     backgroundColor: Colors.blue,
@@ -475,8 +482,8 @@ const styles = StyleSheet.create({
     marginTop: 28,
   },
   saveBtnText: {
-    color: "#fff",
+    color: Colors.textInverse,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
   },
 });

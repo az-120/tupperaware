@@ -1,14 +1,28 @@
 export const Colors = {
+  // Base
+  white: "#FFFFFF",
+  background: "#FFFFFF", // was gray — now pure white
+  surface: "#FFFFFF", // cards also white
+  surfaceAlt: "#F8F8F8", // very subtle off-white for inputs
+  border: "#EBEBEB", // lighter, more refined border
+  borderLight: "#F2F2F2", // even subtler dividers
+
+  // Brand
   blue: "#185FA5",
-  blueBg: "#E6F1FB",
+  blueBg: "#EEF5FC", // lighter, cleaner blue tint
+  blueMid: "#378ADD",
+
+  // Semantic
   green: "#3B6D11",
-  greenBg: "#EAF3DE",
+  greenBg: "#F0F7E6", // lighter green tint
   amber: "#854F0B",
-  amberBg: "#FAEEDA",
+  amberBg: "#FDF3E3", // lighter amber tint
   red: "#A32D2D",
-  redBg: "#FCEBEB",
-  textPrimary: "#2C2C2A",
-  textSecondary: "#5F5E5A",
-  border: "#D3D1C7",
-  surface: "#F1EFE8",
+  redBg: "#FEF1F1", // lighter red tint
+
+  // Text
+  textPrimary: "#1A1A1A", // near black, softer than pure black
+  textSecondary: "#6B6B6B", // medium gray
+  textTertiary: "#A0A0A0", // light gray for hints/placeholders
+  textInverse: "#FFFFFF",
 };
