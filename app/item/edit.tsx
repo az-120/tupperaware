@@ -21,6 +21,17 @@ import { Item, ItemCategory } from "../../types";
 
 const CATEGORIES: ItemCategory[] = ["Dairy", "Produce", "Meat", "Frozen", "Pantry", "Other"];
 
+const CATEGORY_EMOJI: Record<ItemCategory, string> = {
+  Dairy: "🥛",
+  Produce: "🥦",
+  Meat: "🥩",
+  Frozen: "❄️",
+  Pantry: "🥫",
+  Other: "📦",
+};
+
+const PRESET_EMOJIS = ["🥛", "🥚", "🧀", "🥩", "🥦", "🍎", "🍞", "🥫", "❄️", "📦"];
+
 export default function EditItemScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -34,6 +45,8 @@ export default function EditItemScreen() {
   const [category, setCategory] = useState<ItemCategory>("Other");
   const [locationId, setLocationId] = useState("");
   const [expiryDate, setExpiryDate] = useState<Date>(new Date());
+  const [emoji, setEmoji] = useState<string>(CATEGORY_EMOJI["Other"]);
+  const [emojiInput, setEmojiInput] = useState("");
 
   const [nameError, setNameError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -73,6 +86,8 @@ export default function EditItemScreen() {
       setCategory(item.category);
       setLocationId(item.location_id);
       setExpiryDate(normalizeDate(item.expiry_date));
+      const itemEmoji = item.emoji || CATEGORY_EMOJI[item.category];
+      setEmoji(itemEmoji);
       setFetching(false);
     })();
   }, [id]);
@@ -103,6 +118,7 @@ export default function EditItemScreen() {
           category,
           location_id: locationId,
           expiry_date: expiryStr,
+          emoji: emoji || CATEGORY_EMOJI[category],
           updated_at: new Date().toISOString(),
         }),
       },
@@ -166,6 +182,35 @@ export default function EditItemScreen() {
           onBlur={() => setNameError(validateItemName(name).error)}
         />
         {nameError && <Text style={styles.fieldError}>{nameError}</Text>}
+
+        <Text style={styles.label}>Icon</Text>
+        <View style={styles.emojiPickerRow}>
+          <View style={styles.emojiPreview}>
+            <Text style={styles.emojiPreviewChar}>{emoji}</Text>
+          </View>
+          <View style={styles.emojiOptions}>
+            {PRESET_EMOJIS.map((e) => (
+              <TouchableOpacity
+                key={e}
+                style={[styles.emojiOption, emoji === e && !emojiInput && styles.emojiOptionActive]}
+                onPress={() => { setEmoji(e); setEmojiInput(""); }}
+              >
+                <Text style={styles.emojiOptionChar}>{e}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+        <TextInput
+          style={styles.emojiCustomInput}
+          placeholder="or type one"
+          placeholderTextColor={Colors.textSecondary}
+          value={emojiInput}
+          onChangeText={(t) => {
+            setEmojiInput(t);
+            if (t.trim()) setEmoji(t.trim());
+          }}
+          maxLength={4}
+        />
 
         <Text style={styles.label}>Quantity</Text>
         <TextInput
@@ -340,6 +385,56 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     overflow: "hidden",
+  },
+  emojiPickerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 8,
+  },
+  emojiPreview: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: Colors.blueBg,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emojiPreviewChar: {
+    fontSize: 24,
+  },
+  emojiOptions: {
+    flex: 1,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  emojiOption: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emojiOptionActive: {
+    borderColor: Colors.blue,
+    backgroundColor: Colors.blueBg,
+  },
+  emojiOptionChar: {
+    fontSize: 18,
+  },
+  emojiCustomInput: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    padding: 11,
+    fontSize: 15,
+    color: Colors.textPrimary,
+    backgroundColor: "#fff",
+    marginBottom: 4,
   },
   error: {
     color: Colors.red,
