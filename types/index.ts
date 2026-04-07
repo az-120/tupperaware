@@ -43,6 +43,8 @@ export interface Item {
   expiry_date: string;
   barcode: string | null;
   emoji?: string;
+  partially_used?: boolean;
+  use_notes?: string;
   status: ItemStatus;
   added_by: string;
   created_at: string;

@@ -1,6 +1,7 @@
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
@@ -58,6 +59,9 @@ export default function ItemDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [usePromptVisible, setUsePromptVisible] = useState(false);
+  const [useStep, setUseStep] = useState<"choose" | "partial">("choose");
+  const [useNotes, setUseNotes] = useState("");
 
   useEffect(() => {
     if (id) fetchItem(id);
@@ -108,8 +112,8 @@ export default function ItemDetailScreen() {
     setLoading(false);
   };
 
-  const updateStatus = async (status: "used" | "discarded") => {
-    if (!id) return;
+  const patchItem = async (payload: Record<string, unknown>) => {
+    if (!id) return false;
     setUpdating(true);
     setError(null);
 
@@ -121,7 +125,7 @@ export default function ItemDetailScreen() {
       {
         method: "PATCH",
         headers: { ...headers, Prefer: "return=minimal" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify(payload),
       },
     );
 
@@ -130,22 +134,49 @@ export default function ItemDetailScreen() {
     if (!res.ok) {
       const body = await res.text();
       setError(`Update failed: ${body}`);
-      return;
+      return false;
     }
 
-    // Reschedule notifications excluding the now-inactive item
-    if (item) {
-      const activeRes = await fetch(
-        `${base}/rest/v1/items?location_id=eq.${item.location_id}&status=eq.active&id=neq.${id}`,
-        { headers },
-      );
-      if (activeRes.ok) {
-        const remaining = (await activeRes.json()) as Item[];
-        await scheduleAllExpiryNotifications(remaining);
-      }
-    }
+    return true;
+  };
 
-    router.back();
+  const rescheduleNotifications = async () => {
+    if (!item) return;
+    const headers = await getHeaders();
+    const base = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+    const activeRes = await fetch(
+      `${base}/rest/v1/items?location_id=eq.${item.location_id}&status=eq.active&id=neq.${id}`,
+      { headers },
+    );
+    if (activeRes.ok) {
+      const remaining = (await activeRes.json()) as Item[];
+      await scheduleAllExpiryNotifications(remaining);
+    }
+  };
+
+  const handleFullyUsed = async () => {
+    const ok = await patchItem({ status: "used", partially_used: false });
+    if (ok) {
+      await rescheduleNotifications();
+      router.back();
+    }
+  };
+
+  const handlePartiallyUsed = async () => {
+    const ok = await patchItem({
+      status: "active",
+      partially_used: true,
+      use_notes: useNotes.trim(),
+    });
+    if (ok) router.back();
+  };
+
+  const handleDiscard = async () => {
+    const ok = await patchItem({ status: "discarded" });
+    if (ok) {
+      await rescheduleNotifications();
+      router.back();
+    }
   };
 
   if (loading) {
@@ -225,20 +256,82 @@ export default function ItemDetailScreen() {
 
         {/* Action buttons */}
         <View style={styles.actions}>
-          <TouchableOpacity
-            style={[styles.actionBtn, styles.usedBtn]}
-            onPress={() => updateStatus("used")}
-            disabled={updating}
-          >
-            <Text style={styles.actionText}>{updating ? "Updating…" : "Mark as used"}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionBtn, styles.discardBtn]}
-            onPress={() => updateStatus("discarded")}
-            disabled={updating}
-          >
-            <Text style={styles.actionText}>{updating ? "Updating…" : "Discard item"}</Text>
-          </TouchableOpacity>
+          {!usePromptVisible ? (
+            <>
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.usedBtn]}
+                onPress={() => { setUsePromptVisible(true); setUseStep("choose"); }}
+                disabled={updating}
+              >
+                <Text style={styles.actionText}>Mark as used</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.discardBtn]}
+                onPress={handleDiscard}
+                disabled={updating}
+              >
+                <Text style={styles.actionText}>{updating ? "Updating…" : "Discard item"}</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <View style={styles.usePrompt}>
+              {useStep === "choose" ? (
+                <>
+                  <Text style={styles.usePromptTitle}>Did you use all of it?</Text>
+                  <View style={styles.useChoiceRow}>
+                    <TouchableOpacity
+                      style={[styles.useChoiceBtn, styles.useChoiceFull]}
+                      onPress={handleFullyUsed}
+                      disabled={updating}
+                    >
+                      <Text style={styles.useChoiceText}>
+                        {updating ? "Updating…" : "✓ Fully used"}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.useChoiceBtn, styles.useChoicePartial]}
+                      onPress={() => setUseStep("partial")}
+                      disabled={updating}
+                    >
+                      <Text style={styles.useChoiceText}>~ Partially used</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setUsePromptVisible(false)}
+                    style={styles.cancelBtn}
+                  >
+                    <Text style={styles.cancelText}>Cancel</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.usePromptTitle}>How much is left? (optional)</Text>
+                  <TextInput
+                    style={styles.useNotesInput}
+                    placeholder="e.g. half the bag, about 1 cup"
+                    placeholderTextColor={Colors.textSecondary}
+                    value={useNotes}
+                    onChangeText={setUseNotes}
+                  />
+                  <TouchableOpacity
+                    style={[styles.actionBtn, styles.usedBtn]}
+                    onPress={handlePartiallyUsed}
+                    disabled={updating}
+                  >
+                    <Text style={styles.actionText}>
+                      {updating ? "Updating…" : "Confirm partial use"}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setUseStep("choose")}
+                    style={styles.cancelBtn}
+                  >
+                    <Text style={styles.cancelText}>← Back</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -402,5 +495,57 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  usePrompt: {
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 16,
+    gap: 12,
+  },
+  usePromptTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Colors.textPrimary,
+    marginBottom: 4,
+  },
+  useChoiceRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  useChoiceBtn: {
+    flex: 1,
+    borderRadius: 10,
+    padding: 14,
+    alignItems: "center",
+  },
+  useChoiceFull: {
+    backgroundColor: Colors.green,
+  },
+  useChoicePartial: {
+    backgroundColor: Colors.amber,
+  },
+  useChoiceText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  cancelBtn: {
+    alignItems: "center",
+    paddingVertical: 6,
+  },
+  cancelText: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+  },
+  useNotesInput: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    padding: 13,
+    fontSize: 15,
+    color: Colors.textPrimary,
+    backgroundColor: Colors.surface,
   },
 });
