@@ -7,14 +7,14 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from "react-native";
-import { useEffect, useState } from "react";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { ExpiryPill } from "../../components/ExpiryPill";
-import { daysUntilExpiry, getExpiryStatus } from "../../lib/expiry";
-import { supabase } from "../../lib/supabase";
-import { scheduleAllExpiryNotifications } from "../../lib/notifications";
-import { Colors } from "../../constants/colors";
-import { Item, ItemCategory, Location } from "../../types";
+import {useEffect, useState} from "react";
+import {useLocalSearchParams, useRouter} from "expo-router";
+import {ExpiryPill} from "../../components/ExpiryPill";
+import {daysUntilExpiry, getExpiryStatus} from "../../lib/expiry";
+import {supabase} from "../../lib/supabase";
+import {scheduleAllExpiryNotifications} from "../../lib/notifications";
+import {Colors} from "../../constants/colors";
+import {Item, ItemCategory, Location} from "../../types";
 
 const CATEGORY_EMOJI: Record<ItemCategory, string> = {
   Dairy: "🥛",
@@ -51,7 +51,7 @@ function freshnessPercent(createdAt: string, expiryDate: string): number {
 }
 
 export default function ItemDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const {id} = useLocalSearchParams<{id: string}>();
   const router = useRouter();
 
   const [item, setItem] = useState<Item | null>(null);
@@ -85,7 +85,7 @@ export default function ItemDetailScreen() {
 
     const itemRes = await fetch(
       `${base}/rest/v1/items?id=eq.${itemId}&limit=1`,
-      { headers },
+      {headers},
     );
 
     if (!itemRes.ok) {
@@ -101,7 +101,7 @@ export default function ItemDetailScreen() {
     if (fetchedItem) {
       const locRes = await fetch(
         `${base}/rest/v1/locations?id=eq.${fetchedItem.location_id}&limit=1`,
-        { headers },
+        {headers},
       );
       if (locRes.ok) {
         const locs = (await locRes.json()) as Location[];
@@ -120,14 +120,11 @@ export default function ItemDetailScreen() {
     const headers = await getHeaders();
     const base = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 
-    const res = await fetch(
-      `${base}/rest/v1/items?id=eq.${id}`,
-      {
-        method: "PATCH",
-        headers: { ...headers, Prefer: "return=minimal" },
-        body: JSON.stringify(payload),
-      },
-    );
+    const res = await fetch(`${base}/rest/v1/items?id=eq.${id}`, {
+      method: "PATCH",
+      headers: {...headers, Prefer: "return=minimal"},
+      body: JSON.stringify(payload),
+    });
 
     setUpdating(false);
 
@@ -146,7 +143,7 @@ export default function ItemDetailScreen() {
     const base = process.env.EXPO_PUBLIC_SUPABASE_URL!;
     const activeRes = await fetch(
       `${base}/rest/v1/items?location_id=eq.${item.location_id}&status=eq.active&id=neq.${id}`,
-      { headers },
+      {headers},
     );
     if (activeRes.ok) {
       const remaining = (await activeRes.json()) as Item[];
@@ -155,7 +152,7 @@ export default function ItemDetailScreen() {
   };
 
   const handleFullyUsed = async () => {
-    const ok = await patchItem({ status: "used", partially_used: false });
+    const ok = await patchItem({status: "used", partially_used: false});
     if (ok) {
       await rescheduleNotifications();
       router.back();
@@ -172,7 +169,7 @@ export default function ItemDetailScreen() {
   };
 
   const handleDiscard = async () => {
-    const ok = await patchItem({ status: "discarded" });
+    const ok = await patchItem({status: "discarded"});
     if (ok) {
       await rescheduleNotifications();
       router.back();
@@ -206,23 +203,32 @@ export default function ItemDetailScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.navBtn}>
           <Text style={styles.backText}>‹ Back</Text>
         </TouchableOpacity>
-        <Text style={styles.navTitle} numberOfLines={1}>{item.name}</Text>
+        <Text style={styles.navTitle} numberOfLines={1}>
+          {item.name}
+        </Text>
         <TouchableOpacity
           style={styles.navBtn}
-          onPress={() => router.push(`/item/edit?id=${id}` as Parameters<typeof router.push>[0])}
-        >
+          onPress={() =>
+            router.push(
+              `/item/edit?id=${id}` as Parameters<typeof router.push>[0],
+            )
+          }>
           <Text style={styles.editText}>Edit</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.categoryEmoji}>{CATEGORY_EMOJI[item.category]}</Text>
+          <Text style={styles.categoryEmoji}>
+            {item.emoji || CATEGORY_EMOJI[item.category]}
+          </Text>
           <Text style={styles.itemName}>{item.name}</Text>
           {location && (
             <Text style={styles.locationSubtitle}>
-              {location.icon}  {location.name}
+              {location.icon} {location.name}
             </Text>
           )}
         </View>
@@ -231,7 +237,15 @@ export default function ItemDetailScreen() {
         <View style={styles.freshnessSection}>
           <View style={styles.barRow}>
             <View style={styles.barTrack}>
-              <View style={[styles.barFill, { width: `${percent}%` as `${number}%`, backgroundColor: barColor }]} />
+              <View
+                style={[
+                  styles.barFill,
+                  {
+                    width: `${percent}%` as `${number}%`,
+                    backgroundColor: barColor,
+                  },
+                ]}
+              />
             </View>
             <ExpiryPill expiryDate={item.expiry_date} />
           </View>
@@ -246,9 +260,15 @@ export default function ItemDetailScreen() {
         <View style={styles.metaCard}>
           <MetaRow label="Quantity" value={item.quantity || "—"} />
           <MetaRow label="Category" value={item.category} />
-          <MetaRow label="Location" value={location ? `${location.icon} ${location.name}` : "—"} />
+          <MetaRow
+            label="Location"
+            value={location ? `${location.icon} ${location.name}` : "—"}
+          />
           <MetaRow label="Date added" value={formatDate(item.created_at)} />
-          <MetaRow label="Expiry date" value={formatDate(item.expiry_date + "T12:00:00")} />
+          <MetaRow
+            label="Expiry date"
+            value={formatDate(item.expiry_date + "T12:00:00")}
+          />
           <MetaRow label="Barcode" value={item.barcode ?? "Not scanned"} last />
         </View>
 
@@ -260,30 +280,34 @@ export default function ItemDetailScreen() {
             <>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.usedBtn]}
-                onPress={() => { setUsePromptVisible(true); setUseStep("choose"); }}
-                disabled={updating}
-              >
+                onPress={() => {
+                  setUsePromptVisible(true);
+                  setUseStep("choose");
+                }}
+                disabled={updating}>
                 <Text style={styles.actionText}>Mark as used</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionBtn, styles.discardBtn]}
                 onPress={handleDiscard}
-                disabled={updating}
-              >
-                <Text style={styles.actionText}>{updating ? "Updating…" : "Discard item"}</Text>
+                disabled={updating}>
+                <Text style={styles.actionText}>
+                  {updating ? "Updating…" : "Discard item"}
+                </Text>
               </TouchableOpacity>
             </>
           ) : (
             <View style={styles.usePrompt}>
               {useStep === "choose" ? (
                 <>
-                  <Text style={styles.usePromptTitle}>Did you use all of it?</Text>
+                  <Text style={styles.usePromptTitle}>
+                    Did you use all of it?
+                  </Text>
                   <View style={styles.useChoiceRow}>
                     <TouchableOpacity
                       style={[styles.useChoiceBtn, styles.useChoiceFull]}
                       onPress={handleFullyUsed}
-                      disabled={updating}
-                    >
+                      disabled={updating}>
                       <Text style={styles.useChoiceText}>
                         {updating ? "Updating…" : "✓ Fully used"}
                       </Text>
@@ -291,21 +315,21 @@ export default function ItemDetailScreen() {
                     <TouchableOpacity
                       style={[styles.useChoiceBtn, styles.useChoicePartial]}
                       onPress={() => setUseStep("partial")}
-                      disabled={updating}
-                    >
+                      disabled={updating}>
                       <Text style={styles.useChoiceText}>~ Partially used</Text>
                     </TouchableOpacity>
                   </View>
                   <TouchableOpacity
                     onPress={() => setUsePromptVisible(false)}
-                    style={styles.cancelBtn}
-                  >
+                    style={styles.cancelBtn}>
                     <Text style={styles.cancelText}>Cancel</Text>
                   </TouchableOpacity>
                 </>
               ) : (
                 <>
-                  <Text style={styles.usePromptTitle}>How much is left? (optional)</Text>
+                  <Text style={styles.usePromptTitle}>
+                    How much is left? (optional)
+                  </Text>
                   <TextInput
                     style={styles.useNotesInput}
                     placeholder="e.g. half the bag, about 1 cup"
@@ -316,16 +340,14 @@ export default function ItemDetailScreen() {
                   <TouchableOpacity
                     style={[styles.actionBtn, styles.usedBtn]}
                     onPress={handlePartiallyUsed}
-                    disabled={updating}
-                  >
+                    disabled={updating}>
                     <Text style={styles.actionText}>
                       {updating ? "Updating…" : "Confirm partial use"}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => setUseStep("choose")}
-                    style={styles.cancelBtn}
-                  >
+                    style={styles.cancelBtn}>
                     <Text style={styles.cancelText}>← Back</Text>
                   </TouchableOpacity>
                 </>
@@ -338,7 +360,15 @@ export default function ItemDetailScreen() {
   );
 }
 
-function MetaRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
+function MetaRow({
+  label,
+  value,
+  last,
+}: {
+  label: string;
+  value: string;
+  last?: boolean;
+}) {
   return (
     <View style={[styles.metaRow, !last && styles.metaRowBorder]}>
       <Text style={styles.metaLabel}>{label}</Text>
