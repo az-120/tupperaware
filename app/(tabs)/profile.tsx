@@ -6,12 +6,12 @@ import {
   Alert,
   StyleSheet,
 } from "react-native";
-import { useEffect, useState } from "react";
-import { useRouter } from "expo-router";
-import { useAuth } from "../../hooks/useAuth";
-import { useHousehold } from "../../hooks/useHousehold";
-import { supabase } from "../../lib/supabase";
-import { Colors } from "../../constants/colors";
+import {useEffect, useState} from "react";
+import {useRouter} from "expo-router";
+import {useAuth} from "../../hooks/useAuth";
+import {useHousehold} from "../../hooks/useHousehold";
+import {supabase} from "../../lib/supabase";
+import {Colors} from "../../constants/colors";
 
 function initials(email: string): string {
   const local = email.split("@")[0] ?? "";
@@ -31,8 +31,8 @@ function comingSoon() {
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, signOut } = useAuth();
-  const { household, locations } = useHousehold();
+  const {user, signOut} = useAuth();
+  const {household, locations} = useHousehold();
   const [memberCount, setMemberCount] = useState<number>(1);
 
   useEffect(() => {
@@ -49,7 +49,7 @@ export default function ProfileScreen() {
         },
       );
       if (res.ok) {
-        const data = (await res.json()) as { id: string }[];
+        const data = (await res.json()) as {id: string}[];
         setMemberCount(data.length);
       }
     })();
@@ -103,7 +103,9 @@ export default function ProfileScreen() {
           <Text style={styles.locationsLabel}>Locations</Text>
           {locations.map((loc) => (
             <View key={loc.id} style={styles.locationRow}>
-              <Text style={styles.locationText}>{loc.icon}  {loc.name}</Text>
+              <Text style={styles.locationText}>
+                {loc.icon} {loc.name}
+              </Text>
             </View>
           ))}
         </View>
@@ -115,8 +117,7 @@ export default function ProfileScreen() {
             router.push(
               "/household/edit-name" as Parameters<typeof router.push>[0],
             )
-          }
-        >
+          }>
           <Text style={styles.actionLabel}>Edit household name</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
@@ -126,9 +127,26 @@ export default function ProfileScreen() {
             router.push(
               "/household/edit-locations" as Parameters<typeof router.push>[0],
             )
-          }
-        >
+          }>
           <Text style={styles.actionLabel}>Edit locations</Text>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Insights */}
+      <Text style={styles.sectionLabel}>Insights</Text>
+      <View style={styles.card}>
+        <TouchableOpacity
+          style={styles.actionRow}
+          onPress={() =>
+            router.push("/analytics" as Parameters<typeof router.push>[0])
+          }>
+          <View style={styles.actionLabelGroup}>
+            <Text style={styles.actionLabel}>Waste analytics</Text>
+            <Text style={styles.actionSubtitle}>
+              Track your food waste over time
+            </Text>
+          </View>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
       </View>
@@ -136,7 +154,9 @@ export default function ProfileScreen() {
       {/* App */}
       <Text style={styles.sectionLabel}>App</Text>
       <View style={styles.card}>
-        <TouchableOpacity style={[styles.actionRow, styles.rowBottomBorder]} onPress={comingSoon}>
+        <TouchableOpacity
+          style={[styles.actionRow, styles.rowBottomBorder]}
+          onPress={comingSoon}>
           <Text style={styles.actionLabel}>Notification settings</Text>
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
@@ -286,9 +306,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
+  actionLabelGroup: {
+    flex: 1,
+  },
   actionLabel: {
     fontSize: 15,
     color: Colors.textPrimary,
+  },
+  actionSubtitle: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 2,
   },
   chevron: {
     fontSize: 20,
