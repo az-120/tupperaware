@@ -58,6 +58,18 @@ export function computeSummary(items: Item[]): AnalyticsSummary {
   const totalConsumed = totalUsed + totalDiscarded;
   const wasteRate = totalConsumed === 0 ? 0 : (totalDiscarded / totalConsumed) * 100;
 
+  if (__DEV__) {
+    console.log("[analytics] input:", items.length, "items");
+    console.log(
+      "[analytics] used:",
+      totalUsed,
+      "discarded:",
+      totalDiscarded,
+      "waste rate:",
+      wasteRate.toFixed(1) + "%",
+    );
+  }
+
   return { totalConsumed, totalUsed, totalDiscarded, wasteRate, activeItems, partialItems };
 }
 
@@ -72,7 +84,7 @@ export function computeCategoryWaste(items: Item[]): CategoryWaste[] {
     map.set(item.category, entry);
   }
 
-  return Array.from(map.entries())
+  const categoryWaste = Array.from(map.entries())
     .map(([category, { used, discarded }]) => {
       const consumed = used + discarded;
       return {
@@ -84,6 +96,15 @@ export function computeCategoryWaste(items: Item[]): CategoryWaste[] {
       };
     })
     .sort((a, b) => b.discarded - a.discarded);
+
+  if (__DEV__) {
+    console.log(
+      "[analytics] category breakdown:",
+      categoryWaste.map((c) => `${c.category}:${c.wasteRate}%`),
+    );
+  }
+
+  return categoryWaste;
 }
 
 export function computeLocationWaste(items: Item[], locations: Location[]): LocationWaste[] {

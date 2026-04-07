@@ -38,21 +38,27 @@ export async function lookupBarcode(
   barcode: string,
 ): Promise<{ name: string; category: ItemCategory } | null> {
   try {
+    if (__DEV__) console.log("[openFoodFacts] barcode:", barcode);
+
     const response = await fetch(
       `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`,
     );
     if (!response.ok) return null;
 
     const data: OpenFoodFactsResponse = await response.json();
+    if (__DEV__) console.log("[openFoodFacts] raw response:", JSON.stringify(data));
+
     if (data.status !== 1 || !data.product) return null;
 
     const name = data.product.product_name?.trim();
     if (!name) return null;
 
-    return {
+    const result = {
       name,
       category: mapCategory(data.product.categories_tags),
     };
+    if (__DEV__) console.log("[openFoodFacts] parsed:", result);
+    return result;
   } catch {
     return null;
   }

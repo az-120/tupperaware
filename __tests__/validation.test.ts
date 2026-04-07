@@ -187,3 +187,47 @@ describe("validateQuantity", () => {
     expect(validateQuantity("12")).toEqual({ valid: true, error: null });
   });
 });
+
+// ── boundary checks ───────────────────────────────────────────────────────────
+
+describe("boundary checks", () => {
+  it("item name at exactly 2 chars is valid", () => {
+    expect(validateItemName("Ab").valid).toBe(true);
+  });
+
+  it("item name at exactly 100 chars is valid", () => {
+    expect(validateItemName("A".repeat(100)).valid).toBe(true);
+  });
+
+  it("item name at 1 char is invalid", () => {
+    expect(validateItemName("A").valid).toBe(false);
+  });
+
+  it("item name at 101 chars is invalid", () => {
+    expect(validateItemName("A".repeat(101)).valid).toBe(false);
+  });
+
+  it("household name at exactly 2 chars is valid", () => {
+    expect(validateHouseholdName("Ab").valid).toBe(true);
+  });
+
+  it("household name at exactly 50 chars is valid", () => {
+    expect(validateHouseholdName("A".repeat(50)).valid).toBe(true);
+  });
+
+  it("known valid email passes", () => {
+    expect(validateEmail("arthur@example.com").valid).toBe(true);
+  });
+
+  it("known invalid emails fail: missing @", () => {
+    expect(validateEmail("arthurexample.com").valid).toBe(false);
+  });
+
+  it("known invalid emails fail: missing domain", () => {
+    expect(validateEmail("arthur@").valid).toBe(false);
+  });
+
+  it("known invalid emails fail: empty", () => {
+    expect(validateEmail("").valid).toBe(false);
+  });
+});

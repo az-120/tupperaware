@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { validateItems } from "../lib/validators";
 import { Item } from "../types";
 
 interface UseItemsResult {
@@ -34,8 +35,12 @@ export function useItems(locationId: string): UseItemsResult {
       return;
     }
 
-    const data = (await res.json()) as Item[];
-    setItems(data);
+    const json = await res.json();
+    const result = validateItems(json);
+    if (__DEV__ && !result.valid) {
+      console.warn("[useItems] validation errors:", result.errors);
+    }
+    setItems(json as Item[]);
     setLoading(false);
   }, [locationId]);
 

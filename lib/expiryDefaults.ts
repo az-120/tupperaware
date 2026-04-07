@@ -96,16 +96,22 @@ export function getExpiryDays(name: string, category: string): number {
   const lower = name.toLowerCase().trim();
 
   if (FOOD_EXPIRY_DAYS[lower] !== undefined) {
-    return FOOD_EXPIRY_DAYS[lower];
+    const days = FOOD_EXPIRY_DAYS[lower];
+    if (__DEV__) console.log("[expiryDefaults] lookup:", name, "→", days, "days (source: exact)");
+    return days;
   }
 
   for (const key of Object.keys(FOOD_EXPIRY_DAYS)) {
     if (lower.includes(key)) {
-      return FOOD_EXPIRY_DAYS[key];
+      const days = FOOD_EXPIRY_DAYS[key];
+      if (__DEV__) console.log("[expiryDefaults] lookup:", name, "→", days, "days (source: partial)");
+      return days;
     }
   }
 
-  return CATEGORY_DEFAULTS[category] ?? 7;
+  const days = CATEGORY_DEFAULTS[category] ?? 7;
+  if (__DEV__) console.log("[expiryDefaults] lookup:", name, "→", days, "days (source: category fallback)");
+  return days;
 }
 
 export function getSuggestedExpiryDate(name: string, category: string): Date {

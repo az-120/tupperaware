@@ -76,7 +76,14 @@ Rules:
     throw new Error("Empty response from Anthropic API");
   }
 
-  return parseRecipeResponse(text);
+  if (__DEV__) {
+    console.log("[anthropic] prompt length:", prompt.length, "chars");
+    console.log("[anthropic] raw response:", text.slice(0, 200));
+  }
+
+  const recipes = parseRecipeResponse(text);
+  if (__DEV__) console.log("[anthropic] parsed recipes:", recipes.length);
+  return recipes;
 }
 
 function parseRecipeResponse(text: string): Recipe[] {
@@ -146,5 +153,12 @@ Rules:
     throw new Error("Empty response from Anthropic API");
   }
 
-  return parseRecipeResponse(text);
+  if (__DEV__) {
+    console.log("[anthropic] prompt length:", prompt.length, "chars");
+    console.log("[anthropic] raw response:", text.slice(0, 200));
+  }
+
+  const recipes = parseRecipeResponse(text);
+  if (__DEV__) console.log("[anthropic] parsed recipes:", recipes.length);
+  return recipes;
 }

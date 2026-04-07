@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { validateHousehold } from "../lib/validators";
 import { useAuth } from "./useAuth";
 import { Household, Location } from "../types";
 
@@ -61,6 +62,10 @@ export function useHouseholdProvider(): HouseholdContextValue {
     }
 
     const fetchedHousehold = memberRow.households as unknown as Household;
+    const hhValidation = validateHousehold(fetchedHousehold);
+    if (__DEV__ && !hhValidation.valid) {
+      console.warn("[useHousehold] validation errors:", hhValidation.errors);
+    }
     setHousehold(fetchedHousehold);
 
     const { data: locationRows, error: locationError } = await supabase

@@ -5,6 +5,7 @@ import {
   computeMonthlyTrend,
 } from "../lib/analytics";
 import { Item, Location } from "../types";
+import { mockItems, mockLocations, expectedSummary, expectedCategoryWaste } from "./fixtures";
 
 const base: Omit<Item, "status" | "category" | "location_id" | "updated_at" | "partially_used"> = {
   id: "1",
@@ -231,5 +232,78 @@ describe("computeMonthlyTrend", () => {
     const result = computeMonthlyTrend(items);
     const total = result.reduce((sum, m) => sum + m.discarded, 0);
     expect(total).toBe(0);
+  });
+});
+
+// ── range checks ──────────────────────────────────────────────────────────
+
+describe("range checks", () => {
+  it("waste rate is always between 0 and 100", () => {
+    const mixes = [
+      [],
+      [makeItem({ status: "used" })],
+      [makeItem({ status: "discarded" })],
+      [makeItem({ status: "used" }), makeItem({ status: "discarded" })],
+      Array(10).fill(null).map(() => makeItem({ status: "discarded" })),
+    ];
+    for (const items of mixes) {
+      const { wasteRate } = computeSummary(items);
+      expect(wasteRate).toBeGreaterThanOrEqual(0);
+      expect(wasteRate).toBeLessThanOrEqual(100);
+    }
+  });
+
+  it("totalUsed + totalDiscarded always equals totalConsumed", () => {
+    const items = [
+      makeItem({ status: "used" }),
+      makeItem({ status: "discarded" }),
+      makeItem({ status: "active" }),
+    ];
+    const s = computeSummary(items);
+    expect(s.totalUsed + s.totalDiscarded).toBe(s.totalConsumed);
+  });
+
+  it("item counts are never negative", () => {
+    const s = computeSummary([]);
+    expect(s.totalUsed).toBeGreaterThanOrEqual(0);
+    expect(s.totalDiscarded).toBeGreaterThanOrEqual(0);
+    expect(s.activeItems).toBeGreaterThanOrEqual(0);
+    expect(s.partialItems).toBeGreaterThanOrEqual(0);
+  });
+
+  it("waste rate is exactly 50% for mockItems dataset", () => {
+    const s = computeSummary(mockItems);
+    expect(s.wasteRate).toBe(50);
+  });
+
+  it("computeSummary matches expectedSummary for fixture dataset", () => {
+    const s = computeSummary(mockItems);
+    expect(s.totalConsumed).toBe(expectedSummary.totalConsumed);
+    expect(s.totalUsed).toBe(expectedSummary.totalUsed);
+    expect(s.totalDiscarded).toBe(expectedSummary.totalDiscarded);
+    expect(s.wasteRate).toBe(expectedSummary.wasteRate);
+    expect(s.activeItems).toBe(expectedSummary.activeItems);
+    expect(s.partialItems).toBe(expectedSummary.partialItems);
+  });
+
+  it("computeCategoryWaste returns correct entries for fixture dataset", () => {
+    const result = computeCategoryWaste(mockItems);
+    for (const expected of expectedCategoryWaste) {
+      const row = result.find((r) => r.category === expected.category);
+      expect(row).toBeDefined();
+      expect(row!.discarded).toBe(expected.discarded);
+      expect(row!.used).toBe(expected.used);
+      expect(row!.wasteRate).toBe(expected.wasteRate);
+    }
+  });
+
+  it("computeLocationWaste uses mockLocations fixture correctly", () => {
+    const result = computeLocationWaste(mockItems, mockLocations);
+    const fridge = result.find((r) => r.locationId === "loc-1");
+    const pantry = result.find((r) => r.locationId === "loc-2");
+    expect(fridge).toBeDefined();
+    expect(pantry).toBeDefined();
+    expect(fridge!.locationName).toBe("Fridge");
+    expect(pantry!.locationName).toBe("Pantry");
   });
 });
