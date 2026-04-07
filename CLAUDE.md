@@ -272,183 +272,37 @@ Every new feature task must include unit tests. Specifically:
 
 ## Current task
 
-Task" Build the waste tracking analytics screen.
+Task: Add forgot password flow to authentication screens.
 
-### 1. Utility: `lib/analytics.ts`
+### 1. Screen: `app/auth/forgot-password.tsx`
 
-Create a pure utility file for analytics calculations:
+A simple screen for requesting a password reset email:
 
-```typescript
-export interface AnalyticsSummary {
-  totalConsumed: number; // used + discarded
-  totalUsed: number; // status = 'used'
-  totalDiscarded: number; // status = 'discarded'
-  wasteRate: number; // discarded / (used + discarded) * 100
-  activeItems: number; // status = 'active'
-  partialItems: number; // partially_used = true
-}
+- Single email text input
+- Validates email using validateEmail from lib/validation.ts
+- Show inline error if validation fails
+- "Send reset email" button that calls:
+  `supabase.auth.resetPasswordForEmail(email)`
+- Three states to handle:
+  - Default: email input + send button
+  - Loading: spinner + "Sending..." text
+  - Success: hide the form entirely, show a success message:
+    "Check your email — we sent a password reset link to {email}"
+    with a "Back to sign in" link below
+- Error state: inline error message if Supabase call fails
+- Navigation bar title "Forgot password" with back button
 
-export interface CategoryWaste {
-  category: string;
-  emoji: string;
-  discarded: number;
-  used: number;
-  wasteRate: number;
-}
+### 2. Update `app/auth/sign-in.tsx`
 
-export interface LocationWaste {
-  locationId: string;
-  locationName: string;
-  locationIcon: string;
-  discarded: number;
-  used: number;
-  wasteRate: number;
-}
-
-export interface MonthlyTrend {
-  month: string; // e.g. "Mar 2026"
-  used: number;
-  discarded: number;
-  wasteRate: number;
-}
-```
-
-Export these pure functions:
-
-```typescript
-export function computeSummary(items: Item[]): AnalyticsSummary;
-// counts by status, computes waste rate
-// wasteRate = 0 if totalConsumed = 0
-
-export function computeCategoryWaste(items: Item[]): CategoryWaste[];
-// groups by category, computes waste rate per category
-// sorted by discarded count descending
-// only includes categories with at least 1 consumed item
-
-export function computeLocationWaste(
-  items: Item[],
-  locations: Location[],
-): LocationWaste[];
-// groups by location_id, computes waste rate per location
-// sorted by discarded count descending
-// only includes locations with at least 1 consumed item
-
-export function computeMonthlyTrend(items: Item[]): MonthlyTrend[];
-// groups by month of updated_at
-// last 6 months only, sorted chronologically
-// month with no activity still included with 0s
-```
-
-### 2. Unit tests: `__tests__/analytics.test.ts`
-
-Thorough tests for all four functions:
-
-computeSummary:
-
-- Returns all zeros for empty array
-- Correctly counts used vs discarded
-- Computes waste rate correctly (e.g. 3 discarded, 7 used = 30%)
-- Returns 0 waste rate when totalConsumed is 0 (no division by zero)
-- Counts partially_used items correctly
-
-computeCategoryWaste:
-
-- Groups items by category correctly
-- Sorts by discarded count descending
-- Excludes categories with no consumed items
-- Handles single category correctly
-
-computeLocationWaste:
-
-- Groups by location_id correctly
-- Matches location name and icon from locations array
-- Sorts by discarded count descending
-
-computeMonthlyTrend:
-
-- Returns exactly 6 months
-- Months with no activity have 0 values
-- Sorted chronologically oldest to newest
-- Correctly parses updated_at dates
-
-### 3. Screen: `app/analytics.tsx`
-
-Full analytics screen:
-
-Data fetching:
-
-- Uses useAuth and useHousehold
-- Fetches ALL items (active + used + discarded) using raw fetch
-  - session token — do not filter by status
-- Also fetches all locations for location waste breakdown
-- Pass fetched items and locations through analytics utility
-  functions to get all four data shapes
-
-Layout — scrollable, sections separated by dividers:
-
-Header:
-
-- Title "Waste tracker" in nav bar with back button
-- Muted subtitle showing date range: "All time" or
-  "Since [month joined]"
-
-Summary stat cards (3 in a row):
-
-- Total consumed (used + discarded)
-- Total used (green value color)
-- Total discarded (red value color)
-
-Waste rate card (full width):
-
-- Large percentage number in center
-- Color: green if < 20%, amber if 20-40%, red if > 40%
-- Label "of your food was wasted"
-- If totalConsumed = 0 show "No data yet — start marking
-  items as used or discarded"
-
-Category breakdown section:
-
-- Section header "Waste by category"
-- Horizontal bar for each category:
-  - Category emoji + name on left
-  - Filled bar proportional to waste rate
-  - Percentage on right
-  - Bar color matches waste rate (green/amber/red)
-- Only show if at least 1 category has data
-- Empty state: "No category data yet"
-
-Location breakdown section:
-
-- Section header "Waste by location"
-- Same bar chart pattern as category
-- Location icon + name on left
-
-Monthly trend section:
-
-- Section header "Monthly trend (last 6 months)"
-- Simple horizontal bar chart:
-  - Month label on left (e.g. "Mar")
-  - Two stacked bars: green for used, red for discarded
-  - Total count on right
-- Shows improving/worsening trend
-
-### 4. Update `app/(tabs)/profile.tsx`
-
-- Add a "Waste analytics →" row in the household section
-  (or create a new "Insights" section above Danger zone)
-- Navigates to /analytics
-- Show a muted subtitle: "Track your food waste over time"
+- Add a "Forgot password?" text link below the password input
+- Navigates to /auth/forgot-password
+- Style as muted blue text, right-aligned or centered
 
 ### Notes
 
-- analytics.ts must be pure functions only — no Supabase calls,
-  no React hooks, easily testable
-- All Supabase fetching happens in the screen component
-- Use raw fetch with session token
-- Bar charts are pure CSS/View widths — no charting library needed
-  Use a View with width set as a percentage of a fixed container
-  width for the bars
+- No new Supabase schema changes needed
+- Use supabase client directly (not raw fetch) — auth methods
+  work fine with the Supabase JS client
 - Use StyleSheet.create for all styles
-- After all files written run `npm test` and `npx tsc --noEmit`
-  and fix all errors
+- After files written run `npx tsc --noEmit` and fix any errors
 - Suggest a git commit message when done

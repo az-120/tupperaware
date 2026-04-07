@@ -8,11 +8,12 @@ import {
   Platform,
 } from "react-native";
 import { useState } from "react";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { supabase } from "../../lib/supabase";
 import { Colors } from "../../constants/colors";
 
 export default function SignInScreen() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +57,13 @@ export default function SignInScreen() {
 
       <TouchableOpacity style={styles.button} onPress={handleSignIn} disabled={loading}>
         <Text style={styles.buttonText}>{loading ? "Signing in…" : "Sign in"}</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.forgotLink}
+        onPress={() => router.push("/auth/forgot-password" as Parameters<typeof router.push>[0])}
+      >
+        <Text style={styles.link}>Forgot password?</Text>
       </TouchableOpacity>
 
       <Link href="/auth/create-account" style={styles.link}>
@@ -110,8 +118,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
+  forgotLink: {
+    marginTop: 16,
+    alignItems: "center",
+  },
   link: {
-    marginTop: 20,
+    marginTop: 12,
     textAlign: "center",
     color: Colors.blue,
     fontSize: 14,
