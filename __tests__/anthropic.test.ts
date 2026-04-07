@@ -1,8 +1,10 @@
 import { fetchRecipeSuggestions, fetchRecipesForSelectedItems, Recipe } from "../lib/anthropic";
 import { Item } from "../types";
+import { mockItems } from "./fixtures";
 
 const mockFetch = global.fetch as jest.Mock;
 
+// makeItem used for date-specific test scenarios
 const makeItem = (name: string, expiryDate: string): Item => ({
   id: `id-${name}`,
   location_id: "loc-1",
@@ -16,6 +18,9 @@ const makeItem = (name: string, expiryDate: string): Item => ({
   created_at: "2026-04-01T00:00:00Z",
   updated_at: "2026-04-01T00:00:00Z",
 });
+
+// Use active items from fixture as a convenience reference
+const activeFixtureItems = mockItems.filter((i) => i.status === "active");
 
 const sampleRecipes: Recipe[] = [
   {

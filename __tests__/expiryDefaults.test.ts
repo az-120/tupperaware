@@ -133,3 +133,63 @@ describe("normalizeDate", () => {
     expect(result.getFullYear()).toBe(2026);
   });
 });
+
+// ── range checks ──────────────────────────────────────────────────────────────
+
+describe("range checks", () => {
+  it("getExpiryDays always returns a positive number", () => {
+    const cases: Array<[string, string]> = [
+      ["milk", "Dairy"],
+      ["eggs", "Dairy"],
+      ["spinach", "Produce"],
+      ["chicken", "Meat"],
+      ["pasta", "Pantry"],
+      ["mystery item", "Other"],
+      ["totally unknown xyz", "Frozen"],
+    ];
+    for (const [name, category] of cases) {
+      expect(getExpiryDays(name, category)).toBeGreaterThan(0);
+    }
+  });
+
+  it("getExpiryDays never returns 0 or negative", () => {
+    expect(getExpiryDays("", "Other")).toBeGreaterThan(0);
+    expect(getExpiryDays("   ", "Dairy")).toBeGreaterThan(0);
+  });
+
+  it("getSuggestedExpiryDate always returns a future date", () => {
+    const now = new Date();
+    const cases: Array<[string, string]> = [
+      ["milk", "Dairy"],
+      ["eggs", "Dairy"],
+      ["chicken", "Meat"],
+      ["mystery item", "Other"],
+    ];
+    for (const [name, category] of cases) {
+      expect(getSuggestedExpiryDate(name, category).getTime()).toBeGreaterThan(now.getTime());
+    }
+  });
+
+  it("normalizeDate always sets hours to 12", () => {
+    const dates = [
+      new Date(2026, 0, 1, 0, 0, 0),   // midnight
+      new Date(2026, 0, 1, 23, 59, 59), // end of day
+      new Date(2026, 5, 15, 6, 30, 0),  // morning
+    ];
+    for (const d of dates) {
+      expect(normalizeDate(d).getHours()).toBe(12);
+    }
+  });
+
+  it("known answer: eggs → exactly 21 days", () => {
+    expect(getExpiryDays("eggs", "Dairy")).toBe(21);
+  });
+
+  it("known answer: milk → exactly 7 days", () => {
+    expect(getExpiryDays("milk", "Dairy")).toBe(7);
+  });
+
+  it("known answer: unknown item with Dairy category → 7 days fallback", () => {
+    expect(getExpiryDays("completely unknown dairy food xzyz", "Dairy")).toBe(7);
+  });
+});

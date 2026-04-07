@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
+import { validateLocations } from "../lib/validators";
 import { Item, Location } from "../types";
 
 export interface LocationWithItems extends Location {
@@ -46,7 +47,12 @@ export function useLocations(householdId: string | null): UseLocationsResult {
       return;
     }
 
-    const locs = (await locRes.json()) as Location[];
+    const locsJson = await locRes.json();
+    const locValidation = validateLocations(locsJson);
+    if (__DEV__ && !locValidation.valid) {
+      console.warn("[useLocations] validation errors:", locValidation.errors);
+    }
+    const locs = locsJson as Location[];
 
     const locationsWithItems = await Promise.all(
       locs.map(async (loc) => {

@@ -272,37 +272,375 @@ Every new feature task must include unit tests. Specifically:
 
 ## Current task
 
-Task: Add forgot password flow to authentication screens.
+Task: Implement a systematic validation plan for data correctness
+across the entire codebase.
 
-### 1. Screen: `app/auth/forgot-password.tsx`
+### 1. `__tests__/fixtures.ts` — shared canonical test dataset
 
-A simple screen for requesting a password reset email:
+Create a single source of truth for test data used across ALL
+test files:
 
-- Single email text input
-- Validates email using validateEmail from lib/validation.ts
-- Show inline error if validation fails
-- "Send reset email" button that calls:
-  `supabase.auth.resetPasswordForEmail(email)`
-- Three states to handle:
-  - Default: email input + send button
-  - Loading: spinner + "Sending..." text
-  - Success: hide the form entirely, show a success message:
-    "Check your email — we sent a password reset link to {email}"
-    with a "Back to sign in" link below
-- Error state: inline error message if Supabase call fails
-- Navigation bar title "Forgot password" with back button
+```typescript
+import {Item, Location, Household} from "../types";
 
-### 2. Update `app/auth/sign-in.tsx`
+export const mockHousehold: Household = {
+  id: "hh-1",
+  name: "Test Household",
+  created_at: "2026-01-01T00:00:00Z",
+};
 
-- Add a "Forgot password?" text link below the password input
-- Navigates to /auth/forgot-password
-- Style as muted blue text, right-aligned or centered
+export const mockLocations: Location[] = [
+  {
+    id: "loc-1",
+    name: "Fridge",
+    icon: "🧊",
+    household_id: "hh-1",
+    created_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "loc-2",
+    name: "Pantry",
+    icon: "🥫",
+    household_id: "hh-1",
+    created_at: "2026-01-01T00:00:00Z",
+  },
+];
+
+export const mockItems: Item[] = [
+  {
+    id: "1",
+    name: "Whole Milk",
+    category: "Dairy",
+    status: "used",
+    partially_used: false,
+    location_id: "loc-1",
+    emoji: "🥛",
+    expiry_date: "2026-04-10",
+    quantity: "1 gal",
+    updated_at: "2026-03-01T12:00:00Z",
+    created_at: "2026-02-20T12:00:00Z",
+    added_by: "user-1",
+  },
+  {
+    id: "2",
+    name: "Spinach",
+    category: "Produce",
+    status: "discarded",
+    partially_used: false,
+    location_id: "loc-1",
+    emoji: "🥦",
+    expiry_date: "2026-03-28",
+    quantity: "1 bag",
+    updated_at: "2026-03-05T12:00:00Z",
+    created_at: "2026-02-25T12:00:00Z",
+    added_by: "user-1",
+  },
+  {
+    id: "3",
+    name: "Chicken Breast",
+    category: "Meat",
+    status: "discarded",
+    partially_used: false,
+    location_id: "loc-2",
+    emoji: "🥩",
+    expiry_date: "2026-03-30",
+    quantity: "2 lbs",
+    updated_at: "2026-03-10T12:00:00Z",
+    created_at: "2026-03-08T12:00:00Z",
+    added_by: "user-1",
+  },
+  {
+    id: "4",
+    name: "Eggs",
+    category: "Dairy",
+    status: "active",
+    partially_used: true,
+    location_id: "loc-1",
+    emoji: "🥚",
+    expiry_date: "2026-04-20",
+    quantity: "12 ct",
+    updated_at: "2026-03-15T12:00:00Z",
+    created_at: "2026-03-01T12:00:00Z",
+    added_by: "user-1",
+  },
+  {
+    id: "5",
+    name: "Rice",
+    category: "Pantry",
+    status: "used",
+    partially_used: false,
+    location_id: "loc-2",
+    emoji: "🥫",
+    expiry_date: "2026-12-01",
+    quantity: "5 lbs",
+    updated_at: "2026-03-20T12:00:00Z",
+    created_at: "2026-03-10T12:00:00Z",
+    added_by: "user-1",
+  },
+  {
+    id: "6",
+    name: "Greek Yogurt",
+    category: "Dairy",
+    status: "active",
+    partially_used: false,
+    location_id: "loc-1",
+    emoji: "🫙",
+    expiry_date: "2026-04-14",
+    quantity: "32oz",
+    updated_at: "2026-03-20T12:00:00Z",
+    created_at: "2026-03-15T12:00:00Z",
+    added_by: "user-1",
+  },
+];
+
+// Known expected outputs — pre-computed by hand for verification
+export const expectedSummary = {
+  totalConsumed: 4, // milk(used) + spinach(discarded) +
+  // chicken(discarded) + rice(used)
+  totalUsed: 2, // milk, rice
+  totalDiscarded: 2, // spinach, chicken
+  wasteRate: 50, // 2 discarded / 4 consumed * 100
+  activeItems: 2, // eggs, yogurt
+  partialItems: 1, // eggs
+};
+
+export const expectedCategoryWaste = [
+  {category: "Dairy", discarded: 0, used: 1, wasteRate: 0},
+  {category: "Produce", discarded: 1, used: 0, wasteRate: 100},
+  {category: "Meat", discarded: 1, used: 0, wasteRate: 100},
+  {category: "Pantry", discarded: 0, used: 1, wasteRate: 0},
+];
+```
+
+### 2. `lib/validators.ts` — runtime data shape validators
+
+Create a utility for validating data shapes from Supabase before
+use in the app. Export these pure functions:
+
+```typescript
+export interface ValidationResult {
+  valid: boolean;
+  errors: string[];
+  rowCount: number;
+}
+
+export function validateItems(data: unknown): ValidationResult;
+// Checks:
+// - data is an array
+// - each item has required fields: id, name, category, status,
+//   location_id, expiry_date
+// - status is one of: 'active', 'used', 'discarded'
+// - category is one of: 'Dairy','Produce','Meat','Frozen','Pantry','Other'
+// - expiry_date is a valid date string (YYYY-MM-DD format)
+// - logs warning for any item missing optional fields
+
+export function validateLocations(data: unknown): ValidationResult;
+// Checks:
+// - data is an array
+// - each location has: id, name, household_id
+// - name is non-empty string
+
+export function validateHousehold(data: unknown): ValidationResult;
+// Checks:
+// - data is an object (not array)
+// - has required fields: id, name
+// - name is non-empty string
+
+export function validateRecipes(data: unknown): ValidationResult;
+// Checks:
+// - data is an array of 1-3 items
+// - each recipe has: name, emoji, usesItems, description,
+//   cookTime, difficulty
+// - difficulty is one of: 'Easy', 'Medium', 'Hard'
+// - usesItems is a non-empty array
+// - description is non-empty string
+```
+
+Each validator should:
+
+- Log a warning in `__DEV__` mode for each validation error found
+- Log row count on success: `[validators] items: 12 rows validated OK`
+- Return ValidationResult with all errors collected (not just first)
+
+### 3. Add `__DEV__` logging to all `lib/` utilities
+
+Update each file with intermediate result logging:
+
+`lib/analytics.ts` — log after each computation:
+
+```typescript
+if (__DEV__) {
+  console.log("[analytics] input:", items.length, "items");
+  console.log(
+    "[analytics] used:",
+    totalUsed,
+    "discarded:",
+    totalDiscarded,
+    "waste rate:",
+    wasteRate.toFixed(1) + "%",
+  );
+  console.log(
+    "[analytics] category breakdown:",
+    categoryWaste.map((c) => `${c.category}:${c.wasteRate}%`),
+  );
+}
+```
+
+`lib/expiryDefaults.ts` — log lookup results:
+
+```typescript
+if (__DEV__) {
+  console.log(
+    "[expiryDefaults] lookup:",
+    name,
+    "→",
+    days,
+    "days (source:",
+    source,
+    ")",
+  );
+  // source should be 'exact', 'partial', or 'category fallback'
+}
+```
+
+`lib/openFoodFacts.ts` — log API response:
+
+```typescript
+if (__DEV__) {
+  console.log("[openFoodFacts] barcode:", barcode);
+  console.log("[openFoodFacts] raw response:", JSON.stringify(data));
+  console.log("[openFoodFacts] parsed:", result);
+}
+```
+
+`lib/anthropic.ts` — log prompt and response:
+
+```typescript
+if (__DEV__) {
+  console.log("[anthropic] prompt length:", prompt.length, "chars");
+  console.log("[anthropic] raw response:", rawText.slice(0, 200));
+  console.log("[anthropic] parsed recipes:", recipes.length);
+}
+```
+
+`lib/validation.ts` — log validation failures:
+
+```typescript
+if (__DEV__ && !result.valid) {
+  console.warn("[validation] failed:", field, "→", result.error);
+}
+```
+
+### 4. Integrate `lib/validators.ts` into hooks
+
+Update each hook to validate Supabase responses before setting state:
+
+`hooks/useItems.ts`:
+
+```typescript
+const result = validateItems(json);
+if (__DEV__ && !result.valid) {
+  console.warn("[useItems] validation errors:", result.errors);
+}
+// still set state even if invalid — don't block the UI
+// but log so developer knows data is malformed
+setItems(json as Item[]);
+```
+
+Apply same pattern to `hooks/useLocations.ts` and
+`hooks/useHousehold.ts`.
+
+### 5. Update ALL existing test files to use fixtures
+
+Update these test files to import from `__tests__/fixtures.ts`
+instead of defining their own inline mock data:
+
+- `__tests__/analytics.test.ts`
+- `__tests__/expiryDefaults.test.ts`
+- `__tests__/validation.test.ts`
+- `__tests__/openFoodFacts.test.ts`
+- `__tests__/anthropic.test.ts`
+
+### 6. Add range checks and known-answer tests to ALL test files
+
+`__tests__/analytics.test.ts` — add:
+
+```typescript
+describe("range checks", () => {
+  it("waste rate is always between 0 and 100");
+  it("totalUsed + totalDiscarded always equals totalConsumed");
+  it("item counts are never negative");
+  it("waste rate is exactly 50% for mockItems dataset");
+  // verify against expectedSummary from fixtures
+  it("computeSummary matches expectedSummary for fixture dataset");
+});
+```
+
+`__tests__/expiryDefaults.test.ts` — add:
+
+```typescript
+describe("range checks", () => {
+  it("getExpiryDays always returns a positive number");
+  it("getExpiryDays never returns 0 or negative");
+  it("getSuggestedExpiryDate always returns a future date");
+  it("normalizeDate always sets hours to 12");
+  it("known answer: eggs → exactly 21 days");
+  it("known answer: milk → exactly 7 days");
+  it("known answer: unknown item with Dairy category → 7 days fallback");
+});
+```
+
+`__tests__/validation.test.ts` — add:
+
+```typescript
+describe("boundary checks", () => {
+  it("item name at exactly 2 chars is valid");
+  it("item name at exactly 100 chars is valid");
+  it("item name at 1 char is invalid");
+  it("item name at 101 chars is invalid");
+  it("household name at exactly 2 chars is valid");
+  it("household name at exactly 50 chars is valid");
+  it("known valid email passes");
+  it("known invalid emails fail: missing @, missing domain, empty");
+});
+```
+
+`__tests__/validators.test.ts` — new file:
+
+```typescript
+describe("validateItems", () => {
+  it("returns valid for well-formed mockItems fixture");
+  it("returns rowCount matching input array length");
+  it("catches item missing required id field");
+  it("catches invalid status value");
+  it("catches invalid category value");
+  it("catches malformed expiry_date string");
+  it("handles empty array — valid with rowCount 0");
+  it("handles non-array input — returns invalid");
+});
+
+describe("validateLocations", () => {
+  it("returns valid for mockLocations fixture");
+  it("catches missing household_id");
+  it("catches empty name string");
+});
+
+describe("validateRecipes", () => {
+  it("returns valid for well-formed recipe array");
+  it("catches more than 3 recipes");
+  it("catches invalid difficulty value");
+  it("catches empty usesItems array");
+});
+```
 
 ### Notes
 
-- No new Supabase schema changes needed
-- Use supabase client directly (not raw fetch) — auth methods
-  work fine with the Supabase JS client
-- Use StyleSheet.create for all styles
-- After files written run `npx tsc --noEmit` and fix any errors
+- fixtures.ts is imported by ALL test files — get it right first
+  before updating other tests
+- validators.ts is pure functions only — no React, no Supabase
+- **DEV** is a global boolean in React Native — no import needed
+- Do not change any application logic — only add logging and
+  validation checks around existing logic
+- After all files written run `npm test` and fix ALL failing tests
+- Then run `npx tsc --noEmit` and fix type errors
 - Suggest a git commit message when done
