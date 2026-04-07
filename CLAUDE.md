@@ -272,104 +272,58 @@ Every new feature task must include unit tests. Specifically:
 
 ## Current task
 
-Task 3 of 3: Add pick mode with checkbox item selection to the
-recipes tab.
+Task: Add custom emoji support per item and display it in location view.
 
-### 1. Update `lib/anthropic.ts`
+### 1. Database migration
 
-Add a second exported function `fetchRecipesForSelectedItems`:
+Run this in Supabase SQL editor to add the emoji column:
 
-```typescript
-export async function fetchRecipesForSelectedItems(
-  selectedItems: Item[],
-): Promise<Recipe[]>;
+```sql
+alter table items add column if not exists emoji text;
 ```
 
-The function should:
+### 2. Update `types/index.ts`
 
-- Build a prompt for specific item selection:
+Add `emoji?: string` field to the Item type.
 
-```text
-You are a helpful cooking assistant. The user wants to cook
-using these specific ingredients:
-${selectedItems.map(i => - ${i.name} (expires in X days)).join('\n')}
-Common pantry staples (salt, pepper, oil, basic spices) are
-always available.
-Rules:
+### 3. Update `app/item/add.tsx`
 
-Suggest exactly 3 recipes using ONLY the listed ingredients
-plus pantry staples
-Do not suggest recipes requiring unlisted ingredients
-Respond ONLY with a valid JSON array, no markdown:
-[{
-"name": string,
-"emoji": string,
-"usesItems": string[],
-"urgentItems": string[],
-"description": string (2 sentences max),
-"cookTime": string,
-"difficulty": "Easy" | "Medium" | "Hard"
-}]
-```
+- Add an emoji picker row to the manual form between item name
+  and quantity:
+  - Label "Icon"
+  - A row of 8-10 common food emoji options as tappable pills:
+    🥛 🥚 🧀 🥩 🥦 🍎 🍞 🥫 ❄️ 📦
+  - Currently selected emoji shown larger in the center with a
+    light blue background
+  - A text input next to the preset options labeled "or type one"
+    that accepts a single emoji character
+  - Defaults to the category emoji from the existing CATEGORY_EMOJI
+    map if no custom emoji is set
+  - Include emoji field in the Supabase insert payload
 
-- Same API call pattern as fetchRecipeSuggestions
-- Return parsed Recipe[] or throw on error
+### 4. Update `app/item/edit.tsx`
 
-### 2. Component: `components/SelectableItemRow.tsx`
+- Add the same emoji picker row as add.tsx
+- Pre-populate with the item's current emoji on mount
+- Include emoji field in the PATCH payload
 
-A variant of ItemRow with a checkbox:
+### 5. Update `components/ItemRow.tsx`
 
-- Accepts item, selected (boolean), onToggle callback
-- Checkbox on the left (use a simple square with checkmark
-  rendered as styled View components, not a library)
-- Item name, category, quantity as usual
-- ExpiryPill on the right
-- Tapping anywhere on the row toggles selection
-- Selected state: checkbox filled with Colors.blue,
-  row has subtle blue tinted background
-- Unselected state: empty checkbox border, white background
-- Uses Colors from constants/colors.ts
+- Replace the category emoji icon box on the left with the
+  item's own emoji field
+- Fall back to category emoji if item.emoji is null or empty
+- Keep the same icon box styling (rounded square background)
 
-### 3. Update `app/(tabs)/recipes.tsx` — add pick mode
+### 6. Update `components/LocationCard.tsx`
 
-Replace the "Coming in next update" placeholder in the
-"I'll choose" segment with the full pick mode:
-
-Pick mode layout:
-
-- Header row: "Select items to cook with" label on left,
-  "X selected" count on right in blue
-- Full scrollable list of ALL active household items
-  sorted by expiry_date ASC using SelectableItemRow
-- Items grouped into two sections:
-  - "Expiring soon" section (≤5 days) shown first
-  - "All items" section (6+ days) shown below
-  - Section headers as muted uppercase labels
-- No pre-selection — all items start unchecked
-- Sticky bottom bar that appears when ≥2 items selected:
-  - "Suggest recipes using X items →" button (blue)
-  - Disabled and grayed out when < 2 items selected
-- Loading and error states same as smart mode
-- Recipe cards same component as smart mode
-- Caching: fingerprint = selected item IDs sorted and joined
-  Cache separately from smart mode recipes
-
-### 4. Update `__tests__/anthropic.test.ts`
-
-Add tests for fetchRecipesForSelectedItems:
-
-- Mock fetch, verify correct prompt structure is sent
-- Verify selected item names appear in prompt
-- Test successful parse returns Recipe array
-- Test error handling
+- Item chips on the home screen location cards should also
+  show the item emoji before the item name
+- e.g. "🥛 Whole Milk — 2d" instead of "Whole Milk — 2d"
 
 ### Notes
 
-- Sticky bottom bar: use a View with position absolute at
-  bottom of screen, not position fixed
-  Add paddingBottom to ScrollView to prevent content hiding
-  behind it
+- The CATEGORY_EMOJI map likely already exists in add.tsx or
+  types — reuse it, don't duplicate
 - Use StyleSheet.create for all styles
-- After all files written run `npm test` and `npx tsc --noEmit`
-  fix all errors before committing
+- After all files written run `npx tsc --noEmit` and fix any errors
 - Suggest a git commit message when done

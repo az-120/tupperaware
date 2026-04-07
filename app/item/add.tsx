@@ -26,6 +26,17 @@ type Mode = "scan" | "manual";
 
 const CATEGORIES: ItemCategory[] = ["Dairy", "Produce", "Meat", "Frozen", "Pantry", "Other"];
 
+const CATEGORY_EMOJI: Record<ItemCategory, string> = {
+  Dairy: "🥛",
+  Produce: "🥦",
+  Meat: "🥩",
+  Frozen: "❄️",
+  Pantry: "🥫",
+  Other: "📦",
+};
+
+const PRESET_EMOJIS = ["🥛", "🥚", "🧀", "🥩", "🥦", "🍎", "🍞", "🥫", "❄️", "📦"];
+
 export default function AddItemScreen() {
   const { location_id } = useLocalSearchParams<{ location_id: string }>();
   const router = useRouter();
@@ -41,6 +52,9 @@ export default function AddItemScreen() {
   const [category, setCategory] = useState<ItemCategory>("Other");
   const [selectedLocationId, setSelectedLocationId] = useState<string>(location_id ?? "");
   const [expiryDate, setExpiryDate] = useState<Date>(new Date());
+
+  const [emoji, setEmoji] = useState<string>(CATEGORY_EMOJI["Other"]);
+  const [emojiInput, setEmojiInput] = useState("");
 
   const [nameError, setNameError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -62,6 +76,9 @@ export default function AddItemScreen() {
 
   const handleCategoryChange = (cat: ItemCategory) => {
     setCategory(cat);
+    if (!emojiInput) {
+      setEmoji(CATEGORY_EMOJI[cat]);
+    }
     if (!dateManuallyEditedRef.current) {
       setExpiryDate(getSuggestedExpiryDate(name, cat));
       setIsDateSuggested(true);
@@ -123,6 +140,7 @@ export default function AddItemScreen() {
           category,
           quantity: quantity.trim(),
           expiry_date: expiryStr,
+          emoji: emoji || CATEGORY_EMOJI[category],
           status: "active",
           added_by: user.id,
         }),
@@ -205,6 +223,35 @@ export default function AddItemScreen() {
             onBlur={() => setNameError(validateItemName(name).error)}
           />
           {nameError && <Text style={styles.fieldError}>{nameError}</Text>}
+
+          <Text style={styles.label}>Icon</Text>
+          <View style={styles.emojiPickerRow}>
+            <View style={styles.emojiPreview}>
+              <Text style={styles.emojiPreviewChar}>{emoji}</Text>
+            </View>
+            <View style={styles.emojiOptions}>
+              {PRESET_EMOJIS.map((e) => (
+                <TouchableOpacity
+                  key={e}
+                  style={[styles.emojiOption, emoji === e && !emojiInput && styles.emojiOptionActive]}
+                  onPress={() => { setEmoji(e); setEmojiInput(""); }}
+                >
+                  <Text style={styles.emojiOptionChar}>{e}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+          <TextInput
+            style={styles.emojiCustomInput}
+            placeholder="or type one"
+            placeholderTextColor={Colors.textSecondary}
+            value={emojiInput}
+            onChangeText={(t) => {
+              setEmojiInput(t);
+              if (t.trim()) setEmoji(t.trim());
+            }}
+            maxLength={4}
+          />
 
           <Text style={styles.label}>Quantity</Text>
           <TextInput
@@ -434,6 +481,56 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     overflow: "hidden",
+  },
+  emojiPickerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 8,
+  },
+  emojiPreview: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: Colors.blueBg,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emojiPreviewChar: {
+    fontSize: 24,
+  },
+  emojiOptions: {
+    flex: 1,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  emojiOption: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emojiOptionActive: {
+    borderColor: Colors.blue,
+    backgroundColor: Colors.blueBg,
+  },
+  emojiOptionChar: {
+    fontSize: 18,
+  },
+  emojiCustomInput: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    padding: 11,
+    fontSize: 15,
+    color: Colors.textPrimary,
+    backgroundColor: "#fff",
+    marginBottom: 4,
   },
   dateHint: {
     fontSize: 12,

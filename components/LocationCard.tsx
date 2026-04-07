@@ -3,6 +3,16 @@ import { useRouter } from "expo-router";
 import { Colors } from "../constants/colors";
 import { LocationWithItems } from "../hooks/useLocations";
 import { daysUntilExpiry } from "../lib/expiry";
+import { ItemCategory } from "../types";
+
+const CATEGORY_EMOJI: Record<ItemCategory, string> = {
+  Dairy: "🥛",
+  Produce: "🥦",
+  Meat: "🥩",
+  Frozen: "❄️",
+  Pantry: "🥫",
+  Other: "📦",
+};
 
 interface LocationCardProps {
   location: LocationWithItems;
@@ -35,8 +45,10 @@ export function LocationCard({ location }: LocationCardProps) {
             const days = daysUntilExpiry(item.expiry_date);
             const { bg, fg } = chipStyle(days);
             const expiryLabel = days < 0 ? "Expired" : `${days}d`;
+            const itemEmoji = item.emoji || CATEGORY_EMOJI[item.category];
             return (
               <View key={item.id} style={[styles.chip, { backgroundColor: bg }]}>
+                <Text style={[styles.chipEmoji, { color: fg }]}>{itemEmoji}</Text>
                 <Text style={[styles.chipName, { color: fg }]} numberOfLines={1}>
                   {item.name}
                 </Text>
@@ -91,6 +103,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     gap: 4,
     maxWidth: "47%",
+  },
+  chipEmoji: {
+    fontSize: 12,
+    marginRight: 2,
   },
   chipName: {
     fontSize: 12,
