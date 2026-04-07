@@ -146,6 +146,21 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Insights */}
+      <Text style={styles.sectionLabel}>Insights</Text>
+      <View style={styles.card}>
+        <TouchableOpacity
+          style={styles.actionRow}
+          onPress={() => router.push("/analytics" as Parameters<typeof router.push>[0])}
+        >
+          <View style={styles.actionLabelGroup}>
+            <Text style={styles.actionLabel}>Waste analytics</Text>
+            <Text style={styles.actionSubtitle}>Track your food waste over time</Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Danger zone */}
       <Text style={[styles.sectionLabel, styles.dangerLabel]}>Danger zone</Text>
       <View style={styles.card}>
@@ -286,9 +301,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
+  actionLabelGroup: {
+    flex: 1,
+  },
   actionLabel: {
     fontSize: 15,
     color: Colors.textPrimary,
+  },
+  actionSubtitle: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 2,
   },
   chevron: {
     fontSize: 20,

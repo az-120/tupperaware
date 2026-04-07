@@ -111,7 +111,7 @@ items
 ## V2 / stretch features
 
 - [ ] Receipt scanning via camera + AI parsing
-- [ ] Recipe suggestions based on items expiring soon
+- [x] Recipe suggestions based on items expiring soon
 - [ ] Waste tracking analytics (used vs discarded over time)
 - [ ] Nutritional info from Open Food Facts
 - [ ] Invite members by email
@@ -272,78 +272,182 @@ Every new feature task must include unit tests. Specifically:
 
 ## Current task
 
-Task: Add partial use prompt when marking item as used. Assume supabase sql edits were made properly.
+Task" Build the waste tracking analytics screen.
 
-### 1. Update `types/index.ts`
+### 1. Utility: `lib/analytics.ts`
 
-Add to Item type:
+Create a pure utility file for analytics calculations:
 
-- `partially_used?: boolean`
-- `use_notes?: string`
+```typescript
+export interface AnalyticsSummary {
+  totalConsumed: number; // used + discarded
+  totalUsed: number; // status = 'used'
+  totalDiscarded: number; // status = 'discarded'
+  wasteRate: number; // discarded / (used + discarded) * 100
+  activeItems: number; // status = 'active'
+  partialItems: number; // partially_used = true
+}
 
-### 2. Update `app/item/[id].tsx`
+export interface CategoryWaste {
+  category: string;
+  emoji: string;
+  discarded: number;
+  used: number;
+  wasteRate: number;
+}
 
-Replace the current "Mark as used" button behavior with a two-step
-flow:
+export interface LocationWaste {
+  locationId: string;
+  locationName: string;
+  locationIcon: string;
+  discarded: number;
+  used: number;
+  wasteRate: number;
+}
 
-When user taps "Mark as used":
-
-- Show an inline confirmation section that slides in below the
-  button (do not use a modal or Alert — render inline):
-
-```text
-Did you use all of it?
-[✓ Fully used]  [~ Partially used]
-[Cancel]
+export interface MonthlyTrend {
+  month: string; // e.g. "Mar 2026"
+  used: number;
+  discarded: number;
+  wasteRate: number;
+}
 ```
 
-If "Fully used" is tapped:
+Export these pure functions:
 
-- PATCH item: status = 'used', partially_used = false
-- Navigate back on success
+```typescript
+export function computeSummary(items: Item[]): AnalyticsSummary;
+// counts by status, computes waste rate
+// wasteRate = 0 if totalConsumed = 0
 
-If "Partially used" is tapped:
+export function computeCategoryWaste(items: Item[]): CategoryWaste[];
+// groups by category, computes waste rate per category
+// sorted by discarded count descending
+// only includes categories with at least 1 consumed item
 
-- Show a follow-up text input inline:
+export function computeLocationWaste(
+  items: Item[],
+  locations: Location[],
+): LocationWaste[];
+// groups by location_id, computes waste rate per location
+// sorted by discarded count descending
+// only includes locations with at least 1 consumed item
 
-```text
-How much is left? (optional)
-[___________________]
-[Confirm partial use]
+export function computeMonthlyTrend(items: Item[]): MonthlyTrend[];
+// groups by month of updated_at
+// last 6 months only, sorted chronologically
+// month with no activity still included with 0s
 ```
 
-- PATCH item: status = 'active', partially_used = true,
-  use_notes = input value
-- This keeps the item active in the inventory but flags it
-  as partially consumed
-- Navigate back on success
+### 2. Unit tests: `__tests__/analytics.test.ts`
 
-### 4. Update `app/item/edit.tsx`
+Thorough tests for all four functions:
 
-- If item.partially_used is true show a muted badge below
-  the item name: "Partially used"
-- This gives visual feedback that the item has been partially
-  consumed
+computeSummary:
 
-### 5. Update `components/ItemRow.tsx`
+- Returns all zeros for empty array
+- Correctly counts used vs discarded
+- Computes waste rate correctly (e.g. 3 discarded, 7 used = 30%)
+- Returns 0 waste rate when totalConsumed is 0 (no division by zero)
+- Counts partially_used items correctly
 
-- If item.partially_used is true show a small "partial" badge
-  next to the item name in the list
-- Use amber color: background Colors.amberBg, text Colors.amber
-- Badge text: "partial"
+computeCategoryWaste:
 
-### Unit tests: `__tests__/itemActions.test.ts`
+- Groups items by category correctly
+- Sorts by discarded count descending
+- Excludes categories with no consumed items
+- Handles single category correctly
 
-- Test that marking fully used sends correct PATCH payload
-  (status='used', partially_used=false)
-- Test that marking partially used sends correct PATCH payload
-  (status='active', partially_used=true)
-- Test that use_notes is included in partial use payload
-- Test that cancel hides the confirmation section
+computeLocationWaste:
+
+- Groups by location_id correctly
+- Matches location name and icon from locations array
+- Sorts by discarded count descending
+
+computeMonthlyTrend:
+
+- Returns exactly 6 months
+- Months with no activity have 0 values
+- Sorted chronologically oldest to newest
+- Correctly parses updated_at dates
+
+### 3. Screen: `app/analytics.tsx`
+
+Full analytics screen:
+
+Data fetching:
+
+- Uses useAuth and useHousehold
+- Fetches ALL items (active + used + discarded) using raw fetch
+  - session token — do not filter by status
+- Also fetches all locations for location waste breakdown
+- Pass fetched items and locations through analytics utility
+  functions to get all four data shapes
+
+Layout — scrollable, sections separated by dividers:
+
+Header:
+
+- Title "Waste tracker" in nav bar with back button
+- Muted subtitle showing date range: "All time" or
+  "Since [month joined]"
+
+Summary stat cards (3 in a row):
+
+- Total consumed (used + discarded)
+- Total used (green value color)
+- Total discarded (red value color)
+
+Waste rate card (full width):
+
+- Large percentage number in center
+- Color: green if < 20%, amber if 20-40%, red if > 40%
+- Label "of your food was wasted"
+- If totalConsumed = 0 show "No data yet — start marking
+  items as used or discarded"
+
+Category breakdown section:
+
+- Section header "Waste by category"
+- Horizontal bar for each category:
+  - Category emoji + name on left
+  - Filled bar proportional to waste rate
+  - Percentage on right
+  - Bar color matches waste rate (green/amber/red)
+- Only show if at least 1 category has data
+- Empty state: "No category data yet"
+
+Location breakdown section:
+
+- Section header "Waste by location"
+- Same bar chart pattern as category
+- Location icon + name on left
+
+Monthly trend section:
+
+- Section header "Monthly trend (last 6 months)"
+- Simple horizontal bar chart:
+  - Month label on left (e.g. "Mar")
+  - Two stacked bars: green for used, red for discarded
+  - Total count on right
+- Shows improving/worsening trend
+
+### 4. Update `app/(tabs)/profile.tsx`
+
+- Add a "Waste analytics →" row in the household section
+  (or create a new "Insights" section above Danger zone)
+- Navigates to /analytics
+- Show a muted subtitle: "Track your food waste over time"
 
 ### Notes
 
-- Use raw fetch with session token for all PATCH calls
+- analytics.ts must be pure functions only — no Supabase calls,
+  no React hooks, easily testable
+- All Supabase fetching happens in the screen component
+- Use raw fetch with session token
+- Bar charts are pure CSS/View widths — no charting library needed
+  Use a View with width set as a percentage of a fixed container
+  width for the bars
 - Use StyleSheet.create for all styles
 - After all files written run `npm test` and `npx tsc --noEmit`
   and fix all errors
