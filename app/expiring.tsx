@@ -4,21 +4,24 @@ import {
   ScrollView,
   RefreshControl,
   ActivityIndicator,
+  TouchableOpacity,
   StyleSheet,
 } from "react-native";
 import { useCallback, useEffect, useState } from "react";
-import { useHousehold } from "../../hooks/useHousehold";
-import { ItemRow } from "../../components/ItemRow";
-import { daysUntilExpiry } from "../../lib/expiry";
-import { supabase } from "../../lib/supabase";
-import { Colors } from "../../constants/colors";
-import { Item } from "../../types";
+import { useRouter } from "expo-router";
+import { useHousehold } from "../hooks/useHousehold";
+import { ItemRow } from "../components/ItemRow";
+import { daysUntilExpiry } from "../lib/expiry";
+import { supabase } from "../lib/supabase";
+import { Colors } from "../constants/colors";
+import { Item } from "../types";
 
 interface ItemWithLocation extends Item {
   locations: { name: string; household_id: string } | null;
 }
 
 export default function ExpiringScreen() {
+  const router = useRouter();
   const { household, loading: householdLoading } = useHousehold();
 
   const [items, setItems] = useState<ItemWithLocation[]>([]);
@@ -63,7 +66,6 @@ export default function ExpiringScreen() {
     }
 
     const data = (await res.json()) as ItemWithLocation[];
-    // Only keep items whose location belongs to this household
     setItems(data.filter((i) => i.locations?.household_id === household.id));
     setLoading(false);
   }, [household]);
@@ -93,9 +95,20 @@ export default function ExpiringScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.navBar}>
-        <Text style={styles.navTitle}>
-          {total > 0 ? `Expiring (${total})` : "Expiring"}
-        </Text>
+        <TouchableOpacity
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace("/(tabs)" as Parameters<typeof router.replace>[0]);
+            }
+          }}
+          style={styles.navBtn}
+        >
+          <Text style={styles.backText}>‹ Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.navTitle}>Expiring items</Text>
+        <View style={styles.navBtn} />
       </View>
 
       {error && (
@@ -163,16 +176,27 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
   },
   navBar: {
+    flexDirection: "row",
+    alignItems: "center",
     paddingTop: 56,
-    paddingBottom: 14,
-    paddingHorizontal: 20,
+    paddingBottom: 12,
+    paddingHorizontal: 16,
     backgroundColor: "#fff",
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
+  navBtn: {
+    minWidth: 56,
+  },
+  backText: {
+    fontSize: 17,
+    color: Colors.blue,
+  },
   navTitle: {
-    fontSize: 22,
-    fontWeight: "700",
+    flex: 1,
+    textAlign: "center",
+    fontSize: 17,
+    fontWeight: "600",
     color: Colors.textPrimary,
   },
   errorBanner: {

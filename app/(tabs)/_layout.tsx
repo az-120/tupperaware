@@ -19,10 +19,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="expiring"
+        name="recipes"
         options={{
-          title: "Expiring",
-          tabBarIcon: () => <Text style={{fontSize: 20}}>🥀</Text>,
+          title: "Recipes",
+          tabBarIcon: () => <Text style={{fontSize: 20}}>🍳</Text>,
         }}
       />
       <Tabs.Screen

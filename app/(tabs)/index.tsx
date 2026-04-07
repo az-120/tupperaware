@@ -105,7 +105,7 @@ export default function HomeScreen() {
           <Text style={styles.alertText}>
             {critical} {critical === 1 ? "item expires" : "items expire"} within 2 days
           </Text>
-          <TouchableOpacity onPress={() => router.push("/(tabs)/expiring")}>
+          <TouchableOpacity onPress={() => router.push("/expiring" as Parameters<typeof router.push>[0])}>
             <Text style={styles.alertLink}>View</Text>
           </TouchableOpacity>
         </View>

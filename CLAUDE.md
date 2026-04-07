@@ -272,274 +272,104 @@ Every new feature task must include unit tests. Specifically:
 
 ## Current task
 
-Task: Write integration tests for hooks and core data flows.
+Task 3 of 3: Add pick mode with checkbox item selection to the
+recipes tab.
 
-### Setup
+### 1. Update `lib/anthropic.ts`
 
-Before writing any tests, check that these are in package.json
-jest config — add if missing:
-
-```json
-"jest": {
-  "preset": "jest-expo",
-  "setupFilesAfterFramework": [
-    "@testing-library/jest-native/extend-expect"
-  ],
-  "transformIgnorePatterns": [
-    "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg)"
-  ]
-}
-```
-
-Also verify these are installed, install if missing:
-
-```bash
-npx expo install @testing-library/react-native
-npm install --save-dev @testing-library/jest-native
-```
-
-### 1. Test setup file: `__tests__/setup.ts`
-
-Create a shared test setup file that:
-
-- Mocks AsyncStorage:
+Add a second exported function `fetchRecipesForSelectedItems`:
 
 ```typescript
-jest.mock("@react-native-async-storage/async-storage", () =>
-  require("@react-native-async-storage/async-storage/jest/async-storage-mock"),
-);
+export async function fetchRecipesForSelectedItems(
+  selectedItems: Item[],
+): Promise<Recipe[]>;
 ```
 
-- Mocks expo-notifications:
+The function should:
 
-```typescript
-jest.mock("expo-notifications", () => ({
-  requestPermissionsAsync: jest.fn().mockResolvedValue({status: "granted"}),
-  scheduleNotificationAsync: jest.fn().mockResolvedValue("notification-id"),
-  cancelScheduledNotificationAsync: jest.fn().mockResolvedValue(undefined),
-  cancelAllScheduledNotificationsAsync: jest.fn().mockResolvedValue(undefined),
-  addNotificationReceivedListener: jest
-    .fn()
-    .mockReturnValue({remove: jest.fn()}),
-  addNotificationResponseReceivedListener: jest
-    .fn()
-    .mockReturnValue({remove: jest.fn()}),
-}));
+- Build a prompt for specific item selection:
+
+```text
+You are a helpful cooking assistant. The user wants to cook
+using these specific ingredients:
+${selectedItems.map(i => - ${i.name} (expires in X days)).join('\n')}
+Common pantry staples (salt, pepper, oil, basic spices) are
+always available.
+Rules:
+
+Suggest exactly 3 recipes using ONLY the listed ingredients
+plus pantry staples
+Do not suggest recipes requiring unlisted ingredients
+Respond ONLY with a valid JSON array, no markdown:
+[{
+"name": string,
+"emoji": string,
+"usesItems": string[],
+"urgentItems": string[],
+"description": string (2 sentences max),
+"cookTime": string,
+"difficulty": "Easy" | "Medium" | "Hard"
+}]
 ```
 
-- Mocks expo-router:
+- Same API call pattern as fetchRecipeSuggestions
+- Return parsed Recipe[] or throw on error
 
-```typescript
-jest.mock("expo-router", () => ({
-  useRouter: () => ({replace: jest.fn(), push: jest.fn(), back: jest.fn()}),
-  useLocalSearchParams: () => ({}),
-}));
-```
+### 2. Component: `components/SelectableItemRow.tsx`
 
-- Sets up global fetch mock:
+A variant of ItemRow with a checkbox:
 
-```typescript
-global.fetch = jest.fn();
-```
+- Accepts item, selected (boolean), onToggle callback
+- Checkbox on the left (use a simple square with checkmark
+  rendered as styled View components, not a library)
+- Item name, category, quantity as usual
+- ExpiryPill on the right
+- Tapping anywhere on the row toggles selection
+- Selected state: checkbox filled with Colors.blue,
+  row has subtle blue tinted background
+- Unselected state: empty checkbox border, white background
+- Uses Colors from constants/colors.ts
 
-- Add to jest config in package.json:
+### 3. Update `app/(tabs)/recipes.tsx` — add pick mode
 
-```json
-"setupFilesAfterFramework": ["@testing-library/jest-native/extend-expect"],
-"setupFiles": ["./__tests__/setup.ts"]
-```
+Replace the "Coming in next update" placeholder in the
+"I'll choose" segment with the full pick mode:
 
-### 2. `__tests__/useItems.test.ts`
+Pick mode layout:
 
-Integration tests for hooks/useItems.ts:
+- Header row: "Select items to cook with" label on left,
+  "X selected" count on right in blue
+- Full scrollable list of ALL active household items
+  sorted by expiry_date ASC using SelectableItemRow
+- Items grouped into two sections:
+  - "Expiring soon" section (≤5 days) shown first
+  - "All items" section (6+ days) shown below
+  - Section headers as muted uppercase labels
+- No pre-selection — all items start unchecked
+- Sticky bottom bar that appears when ≥2 items selected:
+  - "Suggest recipes using X items →" button (blue)
+  - Disabled and grayed out when < 2 items selected
+- Loading and error states same as smart mode
+- Recipe cards same component as smart mode
+- Caching: fingerprint = selected item IDs sorted and joined
+  Cache separately from smart mode recipes
 
-```typescript
-describe("useItems", () => {
-  beforeEach(() => jest.clearAllMocks());
+### 4. Update `__tests__/anthropic.test.ts`
 
-  it("fetches and returns active items sorted by expiry_date asc");
-  // mock fetch returning 2 items out of order
-  // verify returned items are sorted by expiry_date ASC
+Add tests for fetchRecipesForSelectedItems:
 
-  it("returns empty array when location has no items");
-  // mock fetch returning []
-  // verify items is []
-
-  it("sets loading true initially then false after fetch");
-  // verify loading starts true
-  // after waitFor verify loading is false
-
-  it("sets error when fetch fails");
-  // mock fetch throwing a network error
-  // verify error is set and items is []
-
-  it("sets error when fetch returns non-ok response");
-  // mock fetch returning { ok: false, status: 403 }
-  // verify error is set
-
-  it("refresh function re-fetches items");
-  // call refresh()
-  // verify fetch was called twice total
-});
-```
-
-### 3. `__tests__/useLocations.test.ts`
-
-Integration tests for hooks/useLocations.ts:
-
-```typescript
-describe("useLocations", () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it("fetches locations for a household");
-  // mock fetch returning 3 locations
-  // verify all 3 are returned
-
-  it("fetches items for each location");
-  // mock fetch returning locations with nested items
-  // verify each location has an items array
-
-  it("returns empty array when household has no locations");
-  // mock fetch returning []
-  // verify locations is []
-
-  it("sets loading false after successful fetch");
-
-  it("sets error on fetch failure");
-
-  it("refresh re-fetches locations");
-});
-```
-
-### 4. `__tests__/useHousehold.test.ts`
-
-Integration tests for hooks/useHousehold.ts:
-
-```typescript
-describe("useHousehold", () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it("returns null household when user has no household");
-  // mock fetch returning []
-  // verify household is null
-
-  it("returns household when user is a member");
-  // mock fetch returning a household row
-  // verify household name matches
-
-  it("returns locations alongside household");
-  // mock fetch returning household with locations
-  // verify locations array is populated
-
-  it("sets loading false after fetch");
-
-  it("sets error on fetch failure");
-
-  it("refresh re-fetches household data");
-});
-```
-
-### 5. `__tests__/useAuth.test.ts`
-
-Integration tests for hooks/useAuth.ts:
-
-```typescript
-describe("useAuth", () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it("returns null user when no session exists");
-  // mock supabase.auth.getSession returning null session
-  // verify user is null
-
-  it("returns user when session exists");
-  // mock supabase.auth.getSession returning valid session
-  // verify user.id matches
-
-  it("signOut calls supabase.auth.signOut");
-  // call signOut()
-  // verify supabase.auth.signOut was called
-
-  it("updates user when auth state changes");
-  // trigger onAuthStateChange with a new session
-  // verify user updates accordingly
-});
-```
-
-### 6. `__tests__/addItemFlow.test.ts`
-
-Integration test for the full add item submission flow:
-
-```typescript
-describe("Add item flow", () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it("submits valid item successfully");
-  // render add item screen with a location_id param
-  // fill in item name, category, expiry date
-  // tap Add item button
-  // verify fetch was called with correct body
-  // verify navigation.back() was called
-
-  it("shows validation error when name is empty");
-  // render add item screen
-  // tap Add item without filling name
-  // verify inline error message is visible
-
-  it("shows validation error when expiry date is missing");
-  // render add item screen
-  // fill name but not expiry
-  // tap Add item
-  // verify inline error is visible
-
-  it("shows error message when Supabase insert fails");
-  // mock fetch returning 403
-  // fill valid form and submit
-  // verify error message is shown on screen
-
-  it("auto-populates expiry date when category is selected");
-  // render add item screen
-  // select Dairy category
-  // verify expiry date picker updates to ~7 days from now
-
-  it("auto-populates expiry date when known item name is typed");
-  // type 'eggs' in name field
-  // wait for debounce
-  // verify expiry date updates to ~21 days from now
-});
-```
-
-### 7. Update `__tests__/expiryDefaults.test.ts`
-
-Add these additional integration-level test cases:
-
-- getSuggestedExpiryDate returns a normalized date (hours set to 12)
-- getSuggestedExpiryDate for 'eggs' returns date ~21 days from now
-- getSuggestedExpiryDate for unknown item falls back to category default
-- normalizeDate sets hours to 12 regardless of input time
-- normalizeDate does not change the date when called at noon
+- Mock fetch, verify correct prompt structure is sent
+- Verify selected item names appear in prompt
+- Test successful parse returns Recipe array
+- Test error handling
 
 ### Notes
 
-- All hooks likely use raw fetch — mock global.fetch in setup.ts
-- Mock supabase auth methods where needed:
-
-```typescript
-jest.mock("../lib/supabase", () => ({
-  supabase: {
-    auth: {
-      getSession: jest.fn(),
-      signOut: jest.fn(),
-      onAuthStateChange: jest.fn(() => ({
-        data: {subscription: {unsubscribe: jest.fn()}},
-      })),
-    },
-  },
-}));
-```
-
-- Use renderHook and waitFor from @testing-library/react-native
-  for all hook tests
-- Use render and fireEvent for the addItemFlow screen test
-- After all test files are written run `npm test` and fix ALL
-  failing tests before committing
+- Sticky bottom bar: use a View with position absolute at
+  bottom of screen, not position fixed
+  Add paddingBottom to ScrollView to prevent content hiding
+  behind it
+- Use StyleSheet.create for all styles
+- After all files written run `npm test` and `npx tsc --noEmit`
+  fix all errors before committing
 - Suggest a git commit message when done
