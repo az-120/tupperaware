@@ -12,6 +12,7 @@ import { useHousehold } from "../../hooks/useHousehold";
 import { ItemRow } from "../../components/ItemRow";
 import { supabase } from "../../lib/supabase";
 import { Colors } from "../../constants/colors";
+import { Typography } from "../../constants/typography";
 import { Item } from "../../types";
 
 interface ItemWithLocation extends Item {
@@ -152,34 +153,34 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
   },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
   },
   navBar: {
     paddingTop: 56,
     paddingBottom: 12,
     paddingHorizontal: 16,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
+    backgroundColor: Colors.white,
+    borderBottomWidth: 0.5,
     borderBottomColor: Colors.border,
   },
   navTitle: {
     fontSize: 22,
-    fontWeight: "700",
+    fontFamily: Typography.bold,
     color: Colors.textPrimary,
     marginBottom: 12,
   },
   inputRow: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.surfaceAlt,
     borderRadius: 10,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
     paddingHorizontal: 10,
     marginBottom: 8,
@@ -191,22 +192,24 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 15,
+    fontFamily: Typography.regular,
     color: Colors.textPrimary,
     paddingVertical: 10,
   },
   countLabel: {
     fontSize: 12,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
   },
   scroll: {
     flex: 1,
   },
   results: {
-    borderTopWidth: 1,
+    borderTopWidth: 0.5,
     borderTopColor: Colors.border,
-    borderBottomWidth: 1,
+    borderBottomWidth: 0.5,
     borderBottomColor: Colors.border,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     marginTop: 16,
   },
   empty: {
@@ -220,6 +223,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 15,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
     textAlign: "center",
   },

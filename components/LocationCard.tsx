@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { Colors } from "../constants/colors";
+import { Typography } from "../constants/typography";
 import { LocationWithItems } from "../hooks/useLocations";
 import { daysUntilExpiry } from "../lib/expiry";
 import { ItemCategory } from "../types";
@@ -64,11 +65,11 @@ export function LocationCard({ location }: LocationCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     borderRadius: 14,
     padding: 16,
     marginBottom: 12,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
   },
   header: {
@@ -81,12 +82,13 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
     color: Colors.textPrimary,
     flex: 1,
   },
   count: {
     fontSize: 13,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
   },
   chips: {
@@ -110,11 +112,11 @@ const styles = StyleSheet.create({
   },
   chipName: {
     fontSize: 12,
-    fontWeight: "500",
+    fontFamily: Typography.medium,
     flexShrink: 1,
   },
   chipExpiry: {
     fontSize: 11,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
   },
 });

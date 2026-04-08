@@ -1,20 +1,33 @@
-import { ActivityIndicator, View } from "react-native";
-import { Slot, useRouter, useSegments } from "expo-router";
-import { useEffect, useRef } from "react";
+import {ActivityIndicator, View} from "react-native";
+import {Slot, useRouter, useSegments} from "expo-router";
+import {useEffect, useRef} from "react";
 import * as Notifications from "expo-notifications";
-import { AuthContext, useAuth, useAuthProvider } from "../hooks/useAuth";
-import { HouseholdContext, useHousehold, useHouseholdProvider } from "../hooks/useHousehold";
+import * as SplashScreen from "expo-splash-screen";
+import {
+  useFonts,
+  LibertinusSerif_400Regular,
+  LibertinusSerif_600SemiBold,
+  LibertinusSerif_700Bold,
+} from "@expo-google-fonts/libertinus-serif";
+import {AuthContext, useAuth, useAuthProvider} from "../hooks/useAuth";
+import {
+  HouseholdContext,
+  useHousehold,
+  useHouseholdProvider,
+} from "../hooks/useHousehold";
 import {
   requestPermissions,
   scheduleAllExpiryNotifications,
 } from "../lib/notifications";
-import { supabase } from "../lib/supabase";
-import { Colors } from "../constants/colors";
-import { Item } from "../types";
+import {supabase} from "../lib/supabase";
+import {Colors} from "../constants/colors";
+import {Item} from "../types";
+
+SplashScreen.preventAutoHideAsync();
 
 function NotificationSetup() {
-  const { session, loading: authLoading } = useAuth();
-  const { household, loading: householdLoading } = useHousehold();
+  const {session, loading: authLoading} = useAuth();
+  const {household, loading: householdLoading} = useHousehold();
   const router = useRouter();
   const scheduledRef = useRef(false);
 
@@ -78,8 +91,8 @@ function NotificationSetup() {
 }
 
 function AuthGate() {
-  const { session, loading: authLoading } = useAuth();
-  const { household, loading: householdLoading } = useHousehold();
+  const {session, loading: authLoading} = useAuth();
+  const {household, loading: householdLoading} = useHousehold();
   const router = useRouter();
   const segments = useSegments();
 
@@ -89,7 +102,9 @@ function AuthGate() {
     if (loading) return;
 
     const inAuthGroup = segments[0] === "auth";
-    const onCreateHousehold = (segments as string[]).includes("create-household");
+    const onCreateHousehold = (segments as string[]).includes(
+      "create-household",
+    );
 
     if (!session && !inAuthGroup) {
       router.replace("/auth/sign-in");
@@ -103,7 +118,7 @@ function AuthGate() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <View style={{flex: 1, justifyContent: "center", alignItems: "center"}}>
         <ActivityIndicator color={Colors.blue} />
       </View>
     );
@@ -112,7 +127,7 @@ function AuthGate() {
   return <Slot />;
 }
 
-function HouseholdGate({ children }: { children: React.ReactNode }) {
+function HouseholdGate({children}: {children: React.ReactNode}) {
   const householdValue = useHouseholdProvider();
   return (
     <HouseholdContext.Provider value={householdValue}>
@@ -123,6 +138,18 @@ function HouseholdGate({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   const authValue = useAuthProvider();
+
+  const [fontsLoaded] = useFonts({
+    LibertinusSerif_400Regular,
+    LibertinusSerif_600SemiBold,
+    LibertinusSerif_700Bold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) SplashScreen.hideAsync();
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
 
   return (
     <AuthContext.Provider value={authValue}>

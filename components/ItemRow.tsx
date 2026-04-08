@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { Item, ItemCategory } from "../types";
 import { ExpiryPill } from "./ExpiryPill";
 import { Colors } from "../constants/colors";
+import { Typography } from "../constants/typography";
 
 const CATEGORY_EMOJI: Record<ItemCategory, string> = {
   Dairy: "🥛",
@@ -57,15 +58,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderBottomWidth: 1,
+    borderBottomWidth: 0.5,
     borderBottomColor: Colors.border,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
   },
   iconBox: {
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.surfaceAlt,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
@@ -85,7 +86,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
     color: Colors.textPrimary,
   },
   partialBadge: {
@@ -96,11 +97,12 @@ const styles = StyleSheet.create({
   },
   partialBadgeText: {
     fontSize: 11,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
     color: Colors.amber,
   },
   meta: {
     fontSize: 13,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
   },
 });

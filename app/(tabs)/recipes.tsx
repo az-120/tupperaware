@@ -13,6 +13,7 @@ import { getExpiryStatus } from "../../lib/expiry";
 import { fetchRecipeSuggestions, fetchRecipesForSelectedItems, Recipe } from "../../lib/anthropic";
 import { SelectableItemRow } from "../../components/SelectableItemRow";
 import { Colors } from "../../constants/colors";
+import { Typography } from "../../constants/typography";
 import { Item } from "../../types";
 
 type Mode = "smart" | "choose";
@@ -425,25 +426,25 @@ export default function RecipesScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
   },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
   },
   navBar: {
     paddingTop: 56,
     paddingBottom: 14,
     paddingHorizontal: 20,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
+    backgroundColor: Colors.white,
+    borderBottomWidth: 0.5,
     borderBottomColor: Colors.border,
   },
   navTitle: {
     fontSize: 22,
-    fontWeight: "700",
+    fontFamily: Typography.bold,
     color: Colors.textPrimary,
   },
   scroll: {
@@ -458,6 +459,7 @@ const styles = StyleSheet.create({
   },
   summary: {
     fontSize: 13,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
     marginBottom: 12,
   },
@@ -472,13 +474,14 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
     textAlign: "center",
     lineHeight: 24,
   },
   segmentRow: {
     flexDirection: "row",
-    backgroundColor: Colors.border,
+    backgroundColor: Colors.surfaceAlt,
     borderRadius: 10,
     padding: 3,
     marginBottom: 16,
@@ -490,16 +493,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   segmentActive: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
   },
   segmentText: {
     fontSize: 14,
-    fontWeight: "500",
+    fontFamily: Typography.medium,
     color: Colors.textSecondary,
   },
   segmentTextActive: {
     color: Colors.textPrimary,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
   },
   pickHeader: {
     flexDirection: "row",
@@ -509,18 +512,18 @@ const styles = StyleSheet.create({
   },
   pickLabel: {
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
     color: Colors.textPrimary,
   },
   pickCount: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
     color: Colors.blue,
   },
   sectionHeader: {
     fontSize: 12,
-    fontWeight: "600",
-    color: Colors.textSecondary,
+    fontFamily: Typography.semibold,
+    color: Colors.textTertiary,
     textTransform: "uppercase",
     letterSpacing: 0.6,
     marginBottom: 6,
@@ -528,27 +531,28 @@ const styles = StyleSheet.create({
   },
   itemList: {
     borderRadius: 10,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
     overflow: "hidden",
     marginBottom: 12,
   },
   promptCard: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
     padding: 20,
     marginBottom: 16,
   },
   promptTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontFamily: Typography.bold,
     color: Colors.textPrimary,
     marginBottom: 4,
   },
   promptSubtitle: {
     fontSize: 14,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
     marginBottom: 16,
   },
@@ -559,9 +563,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   suggestBtnText: {
-    color: "#fff",
+    color: Colors.textInverse,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
   },
   loadingRow: {
     flexDirection: "row",
@@ -572,6 +576,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 15,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
   },
   errorBlock: {
@@ -586,17 +591,18 @@ const styles = StyleSheet.create({
   errorText: {
     color: Colors.red,
     fontSize: 14,
+    fontFamily: Typography.regular,
     textAlign: "center",
   },
   tryAgainText: {
     color: Colors.blue,
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
   },
   recipeCard: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
     padding: 16,
     marginBottom: 12,
@@ -610,7 +616,7 @@ const styles = StyleSheet.create({
   },
   recipeName: {
     fontSize: 17,
-    fontWeight: "700",
+    fontFamily: Typography.bold,
     color: Colors.textPrimary,
     flex: 1,
     marginRight: 8,
@@ -622,21 +628,24 @@ const styles = StyleSheet.create({
   },
   diffText: {
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
   },
   usesLabel: {
     fontSize: 13,
+    fontFamily: Typography.regular,
     color: Colors.textPrimary,
     marginBottom: 6,
   },
   recipeDesc: {
     fontSize: 14,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
     lineHeight: 20,
     marginBottom: 8,
   },
   cookTime: {
     fontSize: 13,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
   },
   regenBtn: {
@@ -645,16 +654,16 @@ const styles = StyleSheet.create({
   },
   regenText: {
     fontSize: 15,
+    fontFamily: Typography.medium,
     color: Colors.blue,
-    fontWeight: "500",
   },
   bottomBar: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#fff",
-    borderTopWidth: 1,
+    backgroundColor: Colors.white,
+    borderTopWidth: 0.5,
     borderTopColor: Colors.border,
     padding: 16,
     paddingBottom: 34,
@@ -666,12 +675,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   pickSuggestBtnDisabled: {
-    backgroundColor: Colors.border,
+    backgroundColor: Colors.surfaceAlt,
   },
   pickSuggestBtnText: {
-    color: "#fff",
+    color: Colors.textInverse,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
   },
   pickSuggestBtnTextDisabled: {
     color: Colors.textSecondary,

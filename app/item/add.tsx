@@ -20,6 +20,7 @@ import { scheduleExpiryNotification } from "../../lib/notifications";
 import { validateItemName, validateExpiryDate } from "../../lib/validation";
 import { getSuggestedExpiryDate, normalizeDate } from "../../lib/expiryDefaults";
 import { Colors } from "../../constants/colors";
+import { Typography } from "../../constants/typography";
 import { Item, ItemCategory } from "../../types";
 
 type Mode = "scan" | "manual";
@@ -293,12 +294,15 @@ export default function AddItemScreen() {
           </View>
 
           <Text style={styles.label}>Expiration date</Text>
-          <View style={styles.datePicker}>
+          <View style={styles.datePickerContainer}>
             <DateTimePicker
               value={expiryDate}
               mode="date"
               display={Platform.OS === "ios" ? "inline" : "default"}
               minimumDate={new Date()}
+              textColor={Colors.textPrimary}
+              accentColor={Colors.blue}
+              themeVariant="light"
               onChange={(_event: DateTimePickerEvent, date?: Date) => {
                 if (date) {
                   setExpiryDate(date);
@@ -334,7 +338,7 @@ export default function AddItemScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
   },
   navBar: {
     flexDirection: "row",
@@ -342,8 +346,8 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingBottom: 12,
     paddingHorizontal: 16,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
+    backgroundColor: Colors.white,
+    borderBottomWidth: 0.5,
     borderBottomColor: Colors.border,
   },
   backBtn: {
@@ -351,19 +355,20 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 17,
+    fontFamily: Typography.regular,
     color: Colors.blue,
   },
   navTitle: {
     flex: 1,
     textAlign: "center",
     fontSize: 17,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
     color: Colors.textPrimary,
   },
   segmentRow: {
     flexDirection: "row",
     margin: 16,
-    backgroundColor: Colors.border,
+    backgroundColor: Colors.surfaceAlt,
     borderRadius: 10,
     padding: 3,
   },
@@ -374,16 +379,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   segmentActive: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
   },
   segmentText: {
     fontSize: 14,
-    fontWeight: "500",
+    fontFamily: Typography.medium,
     color: Colors.textSecondary,
   },
   segmentTextActive: {
     color: Colors.textPrimary,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
   },
   scanContainer: {
     flex: 1,
@@ -401,8 +406,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   lookingText: {
-    color: "#fff",
+    color: Colors.textInverse,
     fontSize: 15,
+    fontFamily: Typography.regular,
   },
   scroll: {
     flex: 1,
@@ -416,31 +422,32 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.amber,
   },
   notFoundText: {
     color: Colors.amber,
     fontSize: 13,
-    fontWeight: "500",
+    fontFamily: Typography.medium,
   },
   label: {
     fontSize: 13,
-    fontWeight: "600",
-    color: Colors.textSecondary,
+    fontFamily: Typography.semibold,
+    color: Colors.textTertiary,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 8,
     marginTop: 16,
   },
   input: {
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
     borderRadius: 10,
     padding: 13,
     fontSize: 16,
+    fontFamily: Typography.regular,
     color: Colors.textPrimary,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
   },
   inputError: {
     borderColor: Colors.red,
@@ -448,6 +455,7 @@ const styles = StyleSheet.create({
   fieldError: {
     color: Colors.red,
     fontSize: 12,
+    fontFamily: Typography.regular,
     marginTop: 4,
   },
   pillRow: {
@@ -459,9 +467,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.surfaceAlt,
   },
   pillActive: {
     backgroundColor: Colors.blue,
@@ -469,18 +477,19 @@ const styles = StyleSheet.create({
   },
   pillText: {
     fontSize: 13,
-    fontWeight: "500",
+    fontFamily: Typography.medium,
     color: Colors.textSecondary,
   },
   pillTextActive: {
-    color: "#fff",
+    color: Colors.textInverse,
   },
-  datePicker: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    borderWidth: 1,
+  datePickerContainer: {
+    backgroundColor: Colors.surfaceAlt,
+    borderRadius: 14,
+    borderWidth: 0.5,
     borderColor: Colors.border,
     overflow: "hidden",
+    marginVertical: 8,
   },
   emojiPickerRow: {
     flexDirection: "row",
@@ -509,9 +518,9 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.surfaceAlt,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -523,17 +532,19 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   emojiCustomInput: {
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
     borderRadius: 10,
     padding: 11,
     fontSize: 15,
+    fontFamily: Typography.regular,
     color: Colors.textPrimary,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     marginBottom: 4,
   },
   dateHint: {
     fontSize: 12,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
     marginTop: 6,
     fontStyle: "italic",
@@ -541,6 +552,7 @@ const styles = StyleSheet.create({
   error: {
     color: Colors.red,
     fontSize: 14,
+    fontFamily: Typography.regular,
     marginTop: 16,
   },
   submitBtn: {
@@ -551,8 +563,8 @@ const styles = StyleSheet.create({
     marginTop: 28,
   },
   submitText: {
-    color: "#fff",
+    color: Colors.textInverse,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
   },
 });

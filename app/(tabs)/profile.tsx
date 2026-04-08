@@ -12,6 +12,7 @@ import {useAuth} from "../../hooks/useAuth";
 import {useHousehold} from "../../hooks/useHousehold";
 import {supabase} from "../../lib/supabase";
 import {Colors} from "../../constants/colors";
+import {Typography} from "../../constants/typography";
 
 function initials(email: string): string {
   const local = email.split("@")[0] ?? "";
@@ -180,7 +181,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   scroll: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
   },
   container: {
     paddingBottom: 48,
@@ -189,20 +190,20 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingBottom: 14,
     paddingHorizontal: 20,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
+    backgroundColor: Colors.white,
+    borderBottomWidth: 0.5,
     borderBottomColor: Colors.border,
     marginBottom: 24,
   },
   navTitle: {
     fontSize: 22,
-    fontWeight: "700",
+    fontFamily: Typography.bold,
     color: Colors.textPrimary,
   },
   sectionLabel: {
     fontSize: 12,
-    fontWeight: "600",
-    color: Colors.textSecondary,
+    fontFamily: Typography.semibold,
+    color: Colors.textTertiary,
     textTransform: "uppercase",
     letterSpacing: 0.6,
     marginHorizontal: 20,
@@ -213,9 +214,9 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
     marginHorizontal: 16,
     marginBottom: 24,
@@ -236,21 +237,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   avatarText: {
-    color: "#fff",
+    color: Colors.textInverse,
     fontSize: 18,
-    fontWeight: "700",
+    fontFamily: Typography.bold,
   },
   accountInfo: {
     flex: 1,
   },
   email: {
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
     color: Colors.textPrimary,
     marginBottom: 2,
   },
   memberSince: {
     fontSize: 13,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
   },
   householdHeader: {
@@ -260,24 +262,25 @@ const styles = StyleSheet.create({
   },
   householdName: {
     fontSize: 20,
-    fontWeight: "700",
+    fontFamily: Typography.bold,
     color: Colors.textPrimary,
     marginBottom: 2,
   },
   memberCountText: {
     fontSize: 13,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
   },
   locationsSection: {
-    borderTopWidth: 1,
+    borderTopWidth: 0.5,
     borderTopColor: Colors.border,
     paddingTop: 10,
     paddingBottom: 4,
   },
   locationsLabel: {
     fontSize: 11,
-    fontWeight: "600",
-    color: Colors.textSecondary,
+    fontFamily: Typography.semibold,
+    color: Colors.textTertiary,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginHorizontal: 16,
@@ -289,14 +292,15 @@ const styles = StyleSheet.create({
   },
   locationText: {
     fontSize: 14,
+    fontFamily: Typography.regular,
     color: Colors.textPrimary,
   },
   rowTopBorder: {
-    borderTopWidth: 1,
+    borderTopWidth: 0.5,
     borderTopColor: Colors.border,
   },
   rowBottomBorder: {
-    borderBottomWidth: 1,
+    borderBottomWidth: 0.5,
     borderBottomColor: Colors.border,
   },
   actionRow: {
@@ -311,22 +315,24 @@ const styles = StyleSheet.create({
   },
   actionLabel: {
     fontSize: 15,
+    fontFamily: Typography.regular,
     color: Colors.textPrimary,
   },
   actionSubtitle: {
     fontSize: 12,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
     marginTop: 2,
   },
   chevron: {
     fontSize: 20,
-    color: Colors.textSecondary,
+    color: Colors.textTertiary,
     lineHeight: 22,
   },
   signOutText: {
     flex: 1,
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
     color: Colors.red,
     textAlign: "center",
   },

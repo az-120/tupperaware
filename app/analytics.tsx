@@ -21,6 +21,7 @@ import {
   MonthlyTrend,
 } from "../lib/analytics";
 import { Colors } from "../constants/colors";
+import { Typography } from "../constants/typography";
 import { Item, Location } from "../types";
 
 function wasteColor(rate: number): string {
@@ -281,13 +282,13 @@ export default function AnalyticsScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
   },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
   },
   navBar: {
     flexDirection: "row",
@@ -295,8 +296,8 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingBottom: 12,
     paddingHorizontal: 16,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
+    backgroundColor: Colors.white,
+    borderBottomWidth: 0.5,
     borderBottomColor: Colors.border,
   },
   navBtn: {
@@ -304,13 +305,14 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 17,
+    fontFamily: Typography.regular,
     color: Colors.blue,
   },
   navTitle: {
     flex: 1,
     textAlign: "center",
     fontSize: 17,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
     color: Colors.textPrimary,
   },
   scroll: {
@@ -322,6 +324,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 13,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
     marginBottom: 16,
     textAlign: "center",
@@ -329,6 +332,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: Colors.red,
     fontSize: 14,
+    fontFamily: Typography.regular,
     marginBottom: 12,
   },
   statRow: {
@@ -338,23 +342,23 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
     padding: 14,
     alignItems: "center",
   },
   statValue: {
     fontSize: 24,
-    fontWeight: "700",
+    fontFamily: Typography.bold,
     color: Colors.textPrimary,
     marginBottom: 2,
   },
   statLabel: {
     fontSize: 12,
+    fontFamily: Typography.medium,
     color: Colors.textSecondary,
-    fontWeight: "500",
   },
   wasteRateCard: {
     borderRadius: 14,
@@ -364,23 +368,24 @@ const styles = StyleSheet.create({
   },
   wasteRateNumber: {
     fontSize: 56,
-    fontWeight: "800",
+    fontFamily: Typography.bold,
     marginBottom: 4,
   },
   wasteRateLabel: {
     fontSize: 15,
-    fontWeight: "500",
+    fontFamily: Typography.medium,
   },
   noDataText: {
     fontSize: 14,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
     textAlign: "center",
     lineHeight: 20,
   },
   sectionHeader: {
     fontSize: 13,
-    fontWeight: "600",
-    color: Colors.textSecondary,
+    fontFamily: Typography.semibold,
+    color: Colors.textTertiary,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 12,
@@ -388,13 +393,14 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
     marginBottom: 20,
   },
   barSection: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
     padding: 14,
     gap: 12,
@@ -407,13 +413,14 @@ const styles = StyleSheet.create({
   },
   barLabel: {
     fontSize: 13,
+    fontFamily: Typography.regular,
     color: Colors.textPrimary,
     width: 100,
   },
   barTrack: {
     flex: 1,
     height: 10,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.borderLight,
     borderRadius: 5,
     overflow: "hidden",
   },
@@ -424,7 +431,7 @@ const styles = StyleSheet.create({
   },
   barPct: {
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
     width: 36,
     textAlign: "right",
   },
@@ -435,9 +442,9 @@ const styles = StyleSheet.create({
   },
   trendLabel: {
     fontSize: 12,
+    fontFamily: Typography.medium,
     color: Colors.textSecondary,
     width: 30,
-    fontWeight: "500",
   },
   trendBars: {
     flex: 1,
@@ -456,6 +463,7 @@ const styles = StyleSheet.create({
   },
   trendTotal: {
     fontSize: 12,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
     width: 24,
     textAlign: "right",
@@ -478,6 +486,7 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 12,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
   },
 });

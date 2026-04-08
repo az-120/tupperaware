@@ -14,6 +14,7 @@ import {daysUntilExpiry, getExpiryStatus} from "../../lib/expiry";
 import {supabase} from "../../lib/supabase";
 import {scheduleAllExpiryNotifications} from "../../lib/notifications";
 import {Colors} from "../../constants/colors";
+import {Typography} from "../../constants/typography";
 import {Item, ItemCategory, Location} from "../../types";
 
 const CATEGORY_EMOJI: Record<ItemCategory, string> = {
@@ -380,17 +381,18 @@ function MetaRow({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
   },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
   },
   errorText: {
     color: Colors.textSecondary,
     fontSize: 15,
+    fontFamily: Typography.regular,
   },
   navBar: {
     flexDirection: "row",
@@ -398,8 +400,8 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingBottom: 12,
     paddingHorizontal: 16,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
+    backgroundColor: Colors.white,
+    borderBottomWidth: 0.5,
     borderBottomColor: Colors.border,
   },
   navBtn: {
@@ -407,10 +409,12 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 17,
+    fontFamily: Typography.regular,
     color: Colors.blue,
   },
   editText: {
     fontSize: 17,
+    fontFamily: Typography.regular,
     color: Colors.blue,
     textAlign: "right",
   },
@@ -418,7 +422,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: "center",
     fontSize: 17,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
     color: Colors.textPrimary,
   },
   scroll: {
@@ -438,13 +442,14 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: 22,
-    fontWeight: "700",
+    fontFamily: Typography.bold,
     color: Colors.textPrimary,
     textAlign: "center",
     marginBottom: 4,
   },
   locationSubtitle: {
     fontSize: 14,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
   },
   freshnessSection: {
@@ -459,7 +464,7 @@ const styles = StyleSheet.create({
   barTrack: {
     flex: 1,
     height: 10,
-    backgroundColor: Colors.border,
+    backgroundColor: Colors.borderLight,
     borderRadius: 5,
     overflow: "hidden",
   },
@@ -469,12 +474,13 @@ const styles = StyleSheet.create({
   },
   freshnessLabel: {
     fontSize: 12,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
   },
   metaCard: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
     marginBottom: 24,
     overflow: "hidden",
@@ -487,16 +493,17 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
   },
   metaRowBorder: {
-    borderBottomWidth: 1,
+    borderBottomWidth: 0.5,
     borderBottomColor: Colors.border,
   },
   metaLabel: {
     fontSize: 14,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
   },
   metaValue: {
     fontSize: 14,
-    fontWeight: "500",
+    fontFamily: Typography.medium,
     color: Colors.textPrimary,
     textAlign: "right",
     flex: 1,
@@ -505,6 +512,7 @@ const styles = StyleSheet.create({
   error: {
     color: Colors.red,
     fontSize: 14,
+    fontFamily: Typography.regular,
     marginBottom: 16,
   },
   actions: {
@@ -522,21 +530,21 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.red,
   },
   actionText: {
-    color: "#fff",
+    color: Colors.textInverse,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
   },
   usePrompt: {
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
     padding: 16,
     gap: 12,
   },
   usePromptTitle: {
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
     color: Colors.textPrimary,
     marginBottom: 4,
   },
@@ -557,9 +565,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.amber,
   },
   useChoiceText: {
-    color: "#fff",
+    color: Colors.textInverse,
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
   },
   cancelBtn: {
     alignItems: "center",
@@ -567,15 +575,17 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     fontSize: 15,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
   },
   useNotesInput: {
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
     borderRadius: 10,
     padding: 13,
     fontSize: 15,
+    fontFamily: Typography.regular,
     color: Colors.textPrimary,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.surfaceAlt,
   },
 });

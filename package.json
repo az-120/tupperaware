@@ -11,14 +11,24 @@
   },
   "jest": {
     "preset": "jest-expo",
-    "setupFiles": ["./__tests__/setup.ts"],
-    "testPathIgnorePatterns": ["/node_modules/", "__tests__/setup\\.ts$", "__tests__/fixtures\\.ts$"],
-    "setupFilesAfterEnv": ["@testing-library/jest-native/extend-expect"],
+    "setupFiles": [
+      "./__tests__/setup.ts"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "__tests__/setup\\.ts$",
+      "__tests__/fixtures\\.ts$"
+    ],
+    "setupFilesAfterEnv": [
+      "@testing-library/jest-native/extend-expect"
+    ],
     "transformIgnorePatterns": [
       "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg)"
     ]
   },
   "dependencies": {
+    "@expo-google-fonts/inter": "0.4.2",
+    "@expo-google-fonts/libertinus-serif": "0.4.0",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "8.6.0",
     "@supabase/supabase-js": "2.100.0",
@@ -27,9 +37,11 @@
     "expo-camera": "~55.0.11",
     "expo-constants": "~55.0.9",
     "expo-dev-client": "~55.0.19",
+    "expo-font": "~55.0.6",
     "expo-linking": "~55.0.9",
     "expo-notifications": "~55.0.14",
     "expo-router": "~55.0.8",
+    "expo-splash-screen": "~55.0.16",
     "expo-status-bar": "~55.0.4",
     "react": "19.2.4",
     "react-dom": "19.2.0",

@@ -15,6 +15,7 @@ import {useAuth} from "../../hooks/useAuth";
 import {useHousehold} from "../../hooks/useHousehold";
 import {validateHouseholdName} from "../../lib/validation";
 import {Colors} from "../../constants/colors";
+import {Typography} from "../../constants/typography";
 
 const DEFAULT_LOCATIONS: {name: string; icon: string}[] = [
   {name: "Fridge", icon: "🧊"},
@@ -244,7 +245,7 @@ export default CreateHouseholdScreen;
 const styles = StyleSheet.create({
   outer: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
   },
   container: {
     padding: 24,
@@ -252,31 +253,33 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 26,
-    fontWeight: "700",
+    fontFamily: Typography.bold,
     color: Colors.blue,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 15,
+    fontFamily: Typography.regular,
     color: Colors.textSecondary,
     marginBottom: 32,
   },
   label: {
     fontSize: 14,
-    fontWeight: "600",
-    color: Colors.textSecondary,
+    fontFamily: Typography.semibold,
+    color: Colors.textTertiary,
     marginBottom: 8,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   input: {
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.border,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
+    fontFamily: Typography.regular,
     color: Colors.textPrimary,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.white,
     marginBottom: 4,
   },
   inputError: {
@@ -296,22 +299,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    borderWidth: 1,
+    borderWidth: 0.5,
   },
   pillSelected: {
     backgroundColor: Colors.blue,
     borderColor: Colors.blue,
   },
   pillUnselected: {
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.surfaceAlt,
     borderColor: Colors.border,
   },
   pillText: {
     fontSize: 14,
-    fontWeight: "500",
+    fontFamily: Typography.medium,
   },
   pillTextSelected: {
-    color: "#fff",
+    color: Colors.textInverse,
   },
   pillTextUnselected: {
     color: Colors.textSecondary,
@@ -323,11 +326,12 @@ const styles = StyleSheet.create({
   addCustomText: {
     color: Colors.blue,
     fontSize: 15,
-    fontWeight: "500",
+    fontFamily: Typography.medium,
   },
   error: {
     color: Colors.red,
     fontSize: 14,
+    fontFamily: Typography.regular,
     marginTop: 12,
     marginBottom: 4,
   },
@@ -339,8 +343,8 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   buttonText: {
-    color: "#fff",
+    color: Colors.textInverse,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: Typography.semibold,
   },
 });
