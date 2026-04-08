@@ -9,6 +9,12 @@ A household food inventory and expiration tracking iOS app built with React Nati
 ## Screenshots
 
 > _Add 4–5 screenshots here: home screen, location view, add item, recipes tab, analytics_
+> ![Home Page](screenshots/home.PNG)
+> ![Location View](screenshots/location.PNG)
+> ![Add Item](screenshots/add.PNG)
+> ![Recipe Recommender](screenshots/recipe.PNG)
+> ![Search Page](screenshots/search.PNG)
+> ![Waste Analytics](screenshots/waste.PNG)
 
 ---
 
@@ -285,7 +291,7 @@ tupperaware/
 ## Known Limitations
 
 - **Push notifications** require a real device build (EAS Build + Apple Developer account). Notification scheduling works but delivery in the background cannot be fully tested via Expo Go.
-- **Row Level Security (RLS)** is disabled on Supabase tables due to a JWT configuration issue with the Expo React Native client. This is acceptable for development but should be resolved before any public deployment.
+- **Row Level Security (RLS)** may affect new household creationg due to a JWT configuration issue with the Expo React Native client.
 - **Anthropic API key** is included in the client bundle. A production deployment should proxy API calls through a serverless backend to protect the key.
 - **Single household per user** — the data model supports multiple households but the UI currently assumes one household per user. Multi-household switching is scoped for a future release.
 - **No account deletion** — account deletion requires a server-side Supabase admin API call and is scoped for a future release.
@@ -304,6 +310,26 @@ This project uses a `CLAUDE.md` file in the repository root as a persistent spec
 - All analytics computation lives in `lib/analytics.ts` as pure functions
 - Use `npx expo install` for any new Expo packages, not `npm install`
 - Run `npx expo-doctor` after any dependency changes
+
+---
+
+## Future Work
+
+- Smoother registration + email authentication workflow with supabase
+- See if RLS still prevents household insertion
+- Own and manage multiple households
+- Collaborate with other users, invite to household
+- Receipt scanning for quick item addition
+- Offline support, show cached data
+- Backend proxy to prevent API key potential extraction
+- True item decrement feature, cleanup from db
+- Delete account/data feature
+- More cohesive categories/custom ones
+- Possible scanning improvements, ometimes it’ll populate but then clear it and say unknown scan
+- Better prepopulation of expiration dates, more specific saved known expiration dates
+- Emoji icon per item just one char/default emoji
+- Annoying thing is adding all at once, how to manage?
+- If you type too fast it gets messed up in the add items bar, maybe elsewhere too
 
 ---
 

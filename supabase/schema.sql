@@ -68,22 +68,13 @@ create trigger items_updated_at
   for each row execute function update_updated_at();
 
 -- ── Row Level Security ───────────────────────────────────────
--- NOTE: RLS is currently disabled due to a JWT configuration
--- issue with the Expo React Native Supabase client. All tables
--- have RLS disabled for development. Re-enable and configure
--- properly before any production deployment.
+-- NOTE: RLS may cause household registration insertion due to JWT configuration
 
-alter table households        disable row level security;
-alter table household_members disable row level security;
-alter table locations         disable row level security;
-alter table items             disable row level security;
+alter table households        enable row level security;
+alter table household_members enable row level security;
+alter table locations         enable row level security;
+alter table items             enable row level security;
 
--- ── RLS Policies (defined but not enforced while RLS disabled)
--- To re-enable RLS, run:
---   alter table households        enable row level security;
---   alter table household_members enable row level security;
---   alter table locations         enable row level security;
---   alter table items             enable row level security;
 
 -- Helper function: is current user a member of a given household?
 create or replace function is_household_member(hid uuid)
