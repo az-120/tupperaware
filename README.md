@@ -8,13 +8,18 @@ A household food inventory and expiration tracking iOS app built with React Nati
 
 ## Screenshots
 
-> _Add 4–5 screenshots here: home screen, location view, add item, recipes tab, analytics_
-> ![Home Page](screenshots/home.PNG)
-> ![Location View](screenshots/location.PNG)
-> ![Add Item](screenshots/add.PNG)
-> ![Recipe Recommender](screenshots/recipe.PNG)
-> ![Search Page](screenshots/search.PNG)
-> ![Waste Analytics](screenshots/waste.PNG)
+<table>
+  <tr>
+    <td align="center"><img src="screenshots/home.PNG" width="180"/><br/><sub>Home</sub></td>
+    <td align="center"><img src="screenshots/location.PNG" width="180"/><br/><sub>Location View</sub></td>
+    <td align="center"><img src="screenshots/add.PNG" width="180"/><br/><sub>Add Item</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/recipe.PNG" width="180"/><br/><sub>Recipe Recommender</sub></td>
+    <td align="center"><img src="screenshots/search.PNG" width="180"/><br/><sub>Search</sub></td>
+    <td align="center"><img src="screenshots/waste.PNG" width="180"/><br/><sub>Waste Analytics</sub></td>
+  </tr>
+</table>
 
 ---
 
