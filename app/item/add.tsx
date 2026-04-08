@@ -294,12 +294,15 @@ export default function AddItemScreen() {
           </View>
 
           <Text style={styles.label}>Expiration date</Text>
-          <View style={styles.datePicker}>
+          <View style={styles.datePickerContainer}>
             <DateTimePicker
               value={expiryDate}
               mode="date"
               display={Platform.OS === "ios" ? "inline" : "default"}
               minimumDate={new Date()}
+              textColor={Colors.textPrimary}
+              accentColor={Colors.blue}
+              themeVariant="light"
               onChange={(_event: DateTimePickerEvent, date?: Date) => {
                 if (date) {
                   setExpiryDate(date);
@@ -480,12 +483,13 @@ const styles = StyleSheet.create({
   pillTextActive: {
     color: Colors.textInverse,
   },
-  datePicker: {
-    backgroundColor: Colors.white,
-    borderRadius: 10,
+  datePickerContainer: {
+    backgroundColor: Colors.surfaceAlt,
+    borderRadius: 14,
     borderWidth: 0.5,
     borderColor: Colors.border,
     overflow: "hidden",
+    marginVertical: 8,
   },
   emojiPickerRow: {
     flexDirection: "row",
